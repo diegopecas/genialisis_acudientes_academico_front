@@ -1,0 +1,182 @@
+<div class="modulo">
+  <app-header
+    [tituloModulo]="'Cambiar Contraseña'"
+    [mostrarCrear]="false"
+    [accion]="'CambiarClave'"
+    [raiz]="'/cambiar-clave'"
+    [regresar]="'/menu'"
+    [iconoTitulo]="'/assets/images/clave.png'"
+  ></app-header>
+
+  <div class="cambiar-clave-container">
+    <!-- Información del usuario -->
+    <div class="usuario-info">
+      <div class="avatar">
+        <i class="user-icon">👤</i>
+      </div>
+      <div class="info">
+        <h3>{{ nombreCompleto || 'Usuario' }}</h3>
+        <p>Cambia tu contraseña de acceso al sistema</p>
+      </div>
+    </div>
+
+    <!-- Formulario de cambio de contraseña -->
+    <form class="cambiar-clave-form" (ngSubmit)="cambiarClave()" #claveForm="ngForm">
+      
+      <!-- Contraseña actual -->
+      <div class="form-group">
+        <label for="claveActual" class="form-label">
+          <i class="icon">🔓</i>
+          Contraseña Actual
+        </label>
+        <div class="password-input-container">
+          <input
+            [type]="mostrarClaveActual ? 'text' : 'password'"
+            id="claveActual"
+            name="claveActual"
+            [(ngModel)]="claveActual"
+            required
+            class="form-input"
+            placeholder="Ingresa tu contraseña actual"
+            [disabled]="cargando"
+            (blur)="validarCampo('claveActual')"
+            autocomplete="current-password"
+          >
+          <button
+            type="button"
+            class="toggle-password"
+            (click)="toggleMostrarClave('actual')"
+            [disabled]="cargando"
+          >
+            {{ mostrarClaveActual ? '🙈' : '👁️' }}
+          </button>
+        </div>
+        <div *ngIf="errores.claveActual" class="error-message">
+          {{ errores.claveActual }}
+        </div>
+      </div>
+
+      <!-- Nueva contraseña -->
+      <div class="form-group">
+        <label for="claveNueva" class="form-label">
+          <i class="icon">🔒</i>
+          Nueva Contraseña
+        </label>
+        <div class="password-input-container">
+          <input
+            [type]="mostrarClaveNueva ? 'text' : 'password'"
+            id="claveNueva"
+            name="claveNueva"
+            [(ngModel)]="claveNueva"
+            required
+            class="form-input"
+            placeholder="Ingresa tu nueva contraseña"
+            [disabled]="cargando"
+            (blur)="validarCampo('claveNueva')"
+            (input)="validarCampo('claveNueva')"
+            autocomplete="new-password"
+          >
+          <button
+            type="button"
+            class="toggle-password"
+            (click)="toggleMostrarClave('nueva')"
+            [disabled]="cargando"
+          >
+            {{ mostrarClaveNueva ? '🙈' : '👁️' }}
+          </button>
+        </div>
+        
+        <!-- Indicador de fortaleza -->
+        <div *ngIf="claveNueva" class="password-strength">
+          <div class="strength-bar">
+            <div 
+              class="strength-fill" 
+              [class]="getNivelFortaleza().clase"
+              [style.width.%]="getNivelFortaleza().porcentaje"
+            ></div>
+          </div>
+          <span class="strength-text" [class]="getNivelFortaleza().clase">
+            {{ getNivelFortaleza().nivel }}
+          </span>
+        </div>
+
+        <div *ngIf="errores.claveNueva" class="error-message">
+          {{ errores.claveNueva }}
+        </div>
+      </div>
+
+      <!-- Confirmar contraseña -->
+      <div class="form-group">
+        <label for="confirmarClave" class="form-label">
+          <i class="icon">✅</i>
+          Confirmar Nueva Contraseña
+        </label>
+        <div class="password-input-container">
+          <input
+            [type]="mostrarConfirmarClave ? 'text' : 'password'"
+            id="confirmarClave"
+            name="confirmarClave"
+            [(ngModel)]="confirmarClave"
+            required
+            class="form-input"
+            placeholder="Confirma tu nueva contraseña"
+            [disabled]="cargando"
+            (blur)="validarCampo('confirmarClave')"
+            autocomplete="new-password"
+          >
+          <button
+            type="button"
+            class="toggle-password"
+            (click)="toggleMostrarClave('confirmar')"
+            [disabled]="cargando"
+          >
+            {{ mostrarConfirmarClave ? '🙈' : '👁️' }}
+          </button>
+        </div>
+        <div *ngIf="errores.confirmarClave" class="error-message">
+          {{ errores.confirmarClave }}
+        </div>
+      </div>
+
+      <!-- Recomendaciones de seguridad -->
+      <div class="security-tips">
+        <h4>📋 Recomendaciones para una contraseña segura:</h4>
+        <ul>
+          <li [class.completed]="tieneMinCaracteres()">Al menos 6 caracteres</li>
+          <li [class.completed]="tieneMinusculas()">Letras minúsculas</li>
+          <li [class.completed]="tieneMayusculas()">Letras mayúsculas</li>
+          <li [class.completed]="tieneNumeros()">Números</li>
+          <li [class.completed]="tieneSimbolos()">Símbolos especiales (!&#64;#$%)</li>
+        </ul>
+      </div>
+
+      <!-- Botones de acción -->
+      <div class="form-actions">
+        <button
+          type="button"
+          class="btn btn-cancel"
+          (click)="cancelar()"
+          [disabled]="cargando"
+        >
+          Cancelar
+        </button>
+        
+        <button
+          type="submit"
+          class="btn btn-primary"
+          [disabled]="claveForm.invalid || cargando || errores.claveActual || errores.claveNueva || errores.confirmarClave"
+          [class.loading]="cargando"
+        >
+          <span *ngIf="!cargando">
+            <i class="icon">🔄</i>
+            Cambiar Contraseña
+          </span>
+          <span *ngIf="cargando" class="loading-content">
+            <span class="spinner">⏳</span>
+            Actualizando...
+          </span>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

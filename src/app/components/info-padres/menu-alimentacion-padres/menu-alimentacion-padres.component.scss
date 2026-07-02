@@ -1,0 +1,630 @@
+// ========================================
+// Variables
+// ========================================
+$gold-primary: #FFC107;
+$text-dark: #2c3e50;
+$text-light: #7f8c8d;
+$transition-smooth: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+
+$color-header: #26C6DA;
+$color-header-dark: #00ACC1;
+$color-menu-bg: rgba(255, 152, 0, 0.06);
+$color-menu-border: #FF9800;
+
+// ========================================
+// Contenedor
+// ========================================
+.menu-container {
+  min-height: 100vh;
+  position: relative;
+  overflow: hidden;
+}
+
+.background-image {
+  position: fixed;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background-image: url('/assets/images/fondo_info_padres.png');
+  background-size: cover;
+  background-position: center;
+  filter: blur(3px);
+  transform: scale(1.05);
+  z-index: 0;
+}
+
+.background-overlay {
+  position: fixed;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background: linear-gradient(160deg, rgba(255,255,255,0.35) 0%, rgba(230,245,255,0.25) 40%, rgba(255,245,230,0.25) 70%, rgba(255,255,255,0.35) 100%);
+  z-index: 1;
+}
+
+// Decoraciones
+.deco {
+  position: fixed;
+  border-radius: 50%;
+  opacity: 0.12;
+  z-index: 2;
+  pointer-events: none;
+  animation: flotar 8s ease-in-out infinite;
+}
+.deco-1 { width: 200px; height: 200px; background: radial-gradient(circle, #FFAB91, transparent 70%); top: 10%; left: -50px; }
+.deco-2 { width: 150px; height: 150px; background: radial-gradient(circle, #80D8FF, transparent 70%); top: 30%; right: -40px; animation-delay: 2s; }
+.deco-3 { width: 180px; height: 180px; background: radial-gradient(circle, #CE93D8, transparent 70%); bottom: 15%; left: 5%; animation-delay: 4s; }
+.deco-4 { width: 120px; height: 120px; background: radial-gradient(circle, #FFD180, transparent 70%); bottom: 25%; right: 10%; animation-delay: 6s; }
+
+@keyframes flotar {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-25px) scale(1.08); }
+}
+
+// ========================================
+// Contenido
+// ========================================
+.main-content {
+  position: relative;
+  z-index: 10;
+  padding: 20px 16px 60px;
+}
+
+.content-wrapper {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+// Intro
+.seccion-intro {
+  text-align: center;
+  margin-bottom: 28px;
+
+  h2 {
+    font-size: 1.8rem;
+    font-weight: 800;
+    color: $text-dark;
+    margin: 0 0 6px;
+    text-shadow: 0 2px 10px rgba(255,255,255,0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+
+    @media (max-width: 768px) { font-size: 1.5rem; }
+  }
+
+  .intro-icono {
+    width: 40px;
+    height: 40px;
+    object-fit: contain;
+
+    @media (max-width: 768px) { width: 32px; height: 32px; }
+  }
+
+  p {
+    font-size: 0.95rem;
+    color: $text-light;
+    font-weight: 500;
+    margin: 0;
+  }
+}
+
+// Estados
+.loading-state, .error-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+
+  .spinner {
+    width: 50px; height: 50px;
+    border: 4px solid rgba(38,198,218,0.2);
+    border-top-color: $color-header;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 20px;
+  }
+  p { color: $text-dark; font-weight: 600; }
+}
+
+.error-card {
+  background: rgba(255,255,255,0.7);
+  backdrop-filter: blur(15px);
+  border-radius: 24px;
+  padding: 50px 40px;
+  border: 1px solid rgba(255,255,255,0.5);
+  h3 { color: $text-dark; font-weight: 700; margin: 0; }
+}
+
+// ========================================
+// ========================================
+// VISTA DESKTOP - Grilla
+// ========================================
+// ========================================
+
+.minuta-grid {
+  background: rgba(255,255,255,0.6);
+  backdrop-filter: blur(18px);
+  border-radius: 24px;
+  border: 1px solid rgba(255,255,255,0.5);
+  box-shadow: 0 15px 50px rgba(0,0,0,0.06), 0 0 0 1px rgba(255,255,255,0.3) inset;
+  overflow: hidden;
+  animation: fadeInUp 0.4s ease-out;
+}
+
+// Header
+.grid-header {
+  display: grid;
+  grid-template-columns: 100px repeat(6, 1fr);
+  background: linear-gradient(135deg, $color-header, $color-header-dark);
+  box-shadow: 0 4px 20px rgba(38,198,218,0.25);
+}
+
+.header-semana {
+  padding: 16px 12px;
+  text-align: center;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: rgba(255,255,255,0.9);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.header-dia {
+  padding: 16px 8px;
+  text-align: center;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: rgba(255,255,255,0.9);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+// Filas
+.grid-row {
+  display: grid;
+  grid-template-columns: 100px repeat(6, 1fr);
+  border-bottom: 1px solid rgba(0,0,0,0.04);
+  &:last-child { border-bottom: none; }
+}
+
+.row-semana {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  background: rgba(38,198,218,0.06);
+  border-right: 1px solid rgba(0,0,0,0.04);
+}
+
+.semana-num {
+  width: 36px; height: 36px;
+  border-radius: 10px;
+  background: $color-header;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  font-weight: 800;
+  box-shadow: 0 3px 10px rgba(38,198,218,0.25);
+}
+
+// Celda de menú
+.row-celda {
+  min-height: 100px;
+  padding: 10px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: $transition-smooth;
+  background: #fff;
+  border-right: 1px solid rgba(0,0,0,0.03);
+  text-align: center;
+
+  &:last-child { border-right: none; }
+
+  &.tiene-menu:hover {
+    background: rgba(38,198,218,0.06);
+    z-index: 2;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+  }
+
+  &.vacia {
+    cursor: default;
+    background: rgba(248,248,248,0.5);
+  }
+
+  &.seleccionada {
+    background: rgba(38,198,218,0.1);
+    box-shadow: inset 0 0 0 2px $color-header;
+  }
+
+  &.hoy {
+    background: rgba(255,193,7,0.08);
+    box-shadow: inset 0 0 0 3px $gold-primary;
+    position: relative;
+
+    .celda-nombre {
+      color: darken($gold-primary, 20%);
+      font-weight: 700;
+    }
+
+    &::after {
+      content: 'HOY';
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      background: linear-gradient(135deg, $gold-primary, #FFB300);
+      color: #fff;
+      font-size: 0.52rem;
+      font-weight: 800;
+      padding: 2px 6px;
+      border-radius: 8px;
+      letter-spacing: 0.5px;
+      box-shadow: 0 2px 8px rgba(255,193,7,0.35);
+    }
+  }
+}
+
+.celda-icono {
+  width: 32px; height: 32px;
+  object-fit: contain;
+  opacity: 0.8;
+}
+
+.celda-nombre {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: $text-dark;
+  line-height: 1.3;
+  word-break: break-word;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+}
+
+.celda-vacia {
+  font-size: 0.9rem;
+  color: #ccc;
+}
+
+// ========================================
+// Panel Detalle Desktop
+// ========================================
+.detalle-menu {
+  margin-top: 24px;
+  animation: slideUp 0.35s ease-out;
+}
+
+.detalle-card {
+  background: rgba(255,255,255,0.82);
+  backdrop-filter: blur(20px);
+  border-radius: 24px;
+  border: 1px solid rgba(255,255,255,0.5);
+  box-shadow: 0 15px 40px rgba(0,0,0,0.08);
+  overflow: hidden;
+}
+
+.detalle-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  background: linear-gradient(135deg, $color-header, $color-header-dark);
+  color: #fff;
+}
+
+.detalle-info {
+  display: flex;
+  flex-direction: column;
+
+  .detalle-dia {
+    font-size: 1.3rem;
+    font-weight: 800;
+  }
+
+  .detalle-semana {
+    font-size: 0.85rem;
+    opacity: 0.85;
+    font-weight: 500;
+  }
+}
+
+.detalle-cerrar {
+  background: rgba(255,255,255,0.2);
+  border: none;
+  color: #fff;
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: $transition-smooth;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  &:hover { background: rgba(255,255,255,0.35); transform: scale(1.1); }
+}
+
+.detalle-body {
+  padding: 24px;
+}
+
+.detalle-nombre-wrap {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.detalle-icono {
+  width: 48px; height: 48px;
+  object-fit: contain;
+}
+
+.detalle-nombre {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: $text-dark;
+  margin: 0;
+}
+
+.detalle-descripcion {
+  font-size: 1rem;
+  color: $text-dark;
+  line-height: 1.6;
+  margin: 0;
+  padding: 16px 20px;
+  background: $color-menu-bg;
+  border-left: 4px solid $color-menu-border;
+  border-radius: 0 12px 12px 0;
+}
+
+.detalle-sin-desc {
+  font-size: 0.9rem;
+  color: $text-light;
+  font-style: italic;
+  margin: 0;
+}
+
+// ========================================
+// ========================================
+// VISTA MÓVIL - Tarjetas por semana
+// ========================================
+// ========================================
+.vista-mobile {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+// Banner HOY móvil
+.mobile-banner-hoy {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 16px 20px;
+  background: linear-gradient(135deg, $gold-primary, #FFB300);
+  border-radius: 20px;
+  box-shadow: 0 8px 30px rgba(255,193,7,0.3);
+  cursor: pointer;
+  transition: $transition-smooth;
+  animation: fadeInUp 0.4s ease-out;
+
+  &:active {
+    transform: scale(0.97);
+  }
+}
+
+.banner-hoy-izq {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex-shrink: 0;
+
+  .banner-hoy-label {
+    font-size: 0.65rem;
+    font-weight: 800;
+    color: rgba(255,255,255,0.8);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+  }
+
+  .banner-hoy-dia {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #fff;
+  }
+}
+
+.banner-hoy-der {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+  min-width: 0;
+
+  .banner-hoy-menu {
+    font-size: 1rem;
+    font-weight: 800;
+    color: #fff;
+    text-align: right;
+    word-break: break-word;
+    line-height: 1.3;
+  }
+
+  .banner-hoy-tap {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: rgba(255,255,255,0.75);
+
+    i { margin-left: 4px; }
+  }
+}
+
+// Semana móvil
+.mobile-semana {
+  background: rgba(255,255,255,0.75);
+  backdrop-filter: blur(18px);
+  border-radius: 20px;
+  border: 1px solid rgba(255,255,255,0.5);
+  box-shadow: 0 8px 30px rgba(0,0,0,0.06);
+  overflow: hidden;
+  animation: fadeInUp 0.4s ease-out;
+}
+
+.mobile-semana-header {
+  padding: 14px 20px;
+  background: linear-gradient(135deg, $color-header, $color-header-dark);
+
+  .mobile-semana-num {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: 0.5px;
+  }
+}
+
+// Día móvil
+.mobile-dia-card {
+  padding: 14px 18px;
+  border-bottom: 1px solid rgba(0,0,0,0.04);
+  transition: $transition-smooth;
+
+  &:last-child { border-bottom: none; }
+
+  &.vacia {
+    opacity: 0.5;
+  }
+
+  &.hoy {
+    background: rgba(255,193,7,0.06);
+    border-left: 4px solid $gold-primary;
+
+    .mobile-dia-badge {
+      background: linear-gradient(135deg, $gold-primary, #FFB300);
+      box-shadow: 0 3px 10px rgba(255,193,7,0.35);
+    }
+
+    .mobile-dia-nombre-dia {
+      color: darken($gold-primary, 20%);
+
+      &::after {
+        content: ' — Hoy';
+        font-size: 0.8rem;
+        font-weight: 700;
+        color: $gold-primary;
+      }
+    }
+  }
+}
+
+.mobile-dia-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.mobile-dia-badge {
+  width: 42px; height: 42px;
+  border-radius: 12px;
+  background: $color-header;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  box-shadow: 0 3px 10px rgba(38,198,218,0.2);
+  flex-shrink: 0;
+}
+
+.mobile-dia-nombre-dia {
+  font-size: 1rem;
+  font-weight: 700;
+  color: $text-dark;
+}
+
+// Menú dentro del día móvil
+.mobile-dia-menu {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+  background: $color-menu-bg;
+  border-left: 4px solid $color-menu-border;
+  border-radius: 0 14px 14px 0;
+  margin-left: 54px;
+}
+
+.mobile-menu-icono {
+  width: 36px; height: 36px;
+  object-fit: contain;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.mobile-menu-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+
+  .mobile-menu-nombre {
+    font-size: 1rem;
+    font-weight: 700;
+    color: $text-dark;
+    word-break: break-word;
+  }
+
+  .mobile-menu-desc {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: $text-light;
+    line-height: 1.5;
+    word-break: break-word;
+  }
+}
+
+.mobile-sin-menu {
+  font-size: 0.85rem;
+  color: #ccc;
+  font-style: italic;
+  margin-left: 54px;
+}
+
+// ========================================
+// Animaciones
+// ========================================
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(15px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes pulso {
+  0% { box-shadow: 0 0 0 0 rgba(255,193,7,0.5); }
+  50% { box-shadow: 0 0 0 12px rgba(255,193,7,0); }
+  100% { box-shadow: 0 0 0 0 rgba(255,193,7,0); }
+}
+
+.mobile-dia-card.pulso {
+  animation: pulso 0.75s ease-out 2;
+}
+
+@media (hover: none) {
+  .row-celda.tiene-menu:active { transform: scale(0.97); }
+}

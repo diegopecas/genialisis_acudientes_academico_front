@@ -1,0 +1,70 @@
+<div class="modulo-estudiantes">
+  
+  <!-- Fondo con imagen difuminada -->
+  <div class="background-image"></div>
+  <div class="background-overlay"></div>
+
+  <!-- Header del componente -->
+  <app-header
+    [tituloModulo]="titulo"
+    [mostrarCrear]="false"
+    [accion]="'ConsultarMisEstudiantes'"
+    [raiz]="'/mis-estudiantes'"
+    [regresar]="'/menu'"
+    [iconoTitulo]="'/assets/images/familia.png'"
+  ></app-header>
+  
+  <!-- Vista unificada -->
+  <div class="lista-estudiantes-movil">
+    <!-- Tarjetas de estudiantes -->
+    <div class="estudiantes-container">
+      <div 
+        *ngFor="let estudiante of datos" 
+        class="estudiante-card"
+        [class.inactivo]="estudiante.activo === 0"
+        (click)="mostrarOpcionesEstudiante(estudiante)"
+      >
+        <div class="card-header">
+          <div class="estudiante-info">
+            <div class="nombre">{{ estudiante.nombre_completo }}</div>
+            <div class="grupo">{{ estudiante.nombre_grupo }}</div>
+          </div>
+          <span 
+            class="estado-badge" 
+            [class.activo]="estudiante.activo === 1"
+            [class.inactivo]="estudiante.activo === 0"
+          >
+            {{ estudiante.estado }}
+          </span>
+        </div>
+        <div class="card-actions">
+          <a [routerLink]="['/estudiantes-vista', estudiante.id_estudiante]" class="ver-mas">
+            Ver perfil completo
+          </a>
+          <div class="acciones-rapidas">
+            <button (click)="verPerfil($event, estudiante)">Ver perfil</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Mensaje cuando no hay resultados -->
+    <div *ngIf="datos.length === 0" class="no-resultados">
+      <p>No se encontraron estudiantes</p>
+      <p class="mensaje-info">Si eres acudiente de algún estudiante, contacta con la institución para verificar tus permisos.</p>
+    </div>
+  </div>
+  
+  <!-- Menú de acción flotante (solo Vista 360) -->
+  <div *ngIf="estudianteSeleccionado" class="acciones-movil">
+    <div class="acciones-scroll">
+      <div 
+        class="accion-item"
+        (click)="ejecutarAccionMovil('vista_360')"
+      >
+        <img src="/assets/images/vista_360.png" alt="Ver perfil">
+        <span>Ver perfil</span>
+      </div>
+    </div>
+  </div>
+</div>

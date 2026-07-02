@@ -1,0 +1,160 @@
+<div class="menu-container">
+  <!-- Fondo -->
+  <div class="background-image"></div>
+  <div class="background-overlay"></div>
+
+  <!-- Decoraciones flotantes -->
+  <div class="deco deco-1"></div>
+  <div class="deco deco-2"></div>
+  <div class="deco deco-3"></div>
+  <div class="deco deco-4"></div>
+
+  <!-- Header -->
+  <app-header
+    [tituloModulo]="titulo"
+    [mostrarCrear]="false"
+    [raiz]="'/info-padres/menu-alimentacion'"
+    [regresar]="'/info-padres'"
+    [iconoTitulo]="'/assets/images/menu-alimentacion.png'"
+  ></app-header>
+
+  <!-- Contenido -->
+  <div class="main-content">
+    <div class="content-wrapper">
+
+      <!-- Título descriptivo -->
+      <div class="seccion-intro">
+        <h2>
+          <img class="intro-icono" src="/assets/images/menu-alimentacion.png" alt="" />
+          Menú Semanal de Alimentación
+        </h2>
+        <p>Conoce qué menú se prepara cada día para nuestros pequeños</p>
+      </div>
+
+      <!-- Loading -->
+      <div class="loading-state" *ngIf="isLoading">
+        <div class="spinner"></div>
+        <p>Cargando menú...</p>
+      </div>
+
+      <!-- Error -->
+      <div class="error-state" *ngIf="errorMessage && !isLoading">
+        <div class="error-card">
+          <h3>{{ errorMessage }}</h3>
+        </div>
+      </div>
+
+      <!-- ============================= -->
+      <!-- VISTA DESKTOP - Grilla         -->
+      <!-- ============================= -->
+      <div class="vista-desktop" *ngIf="!isLoading && !errorMessage && !esMobile">
+
+        <div class="minuta-grid">
+          <!-- Header días -->
+          <div class="grid-header">
+            <div class="header-semana">Semana</div>
+            <div *ngFor="let dia of diasSemana" class="header-dia">{{ dia.corto }}</div>
+          </div>
+
+          <!-- Filas de semanas -->
+          <div *ngFor="let semana of semanas; trackBy: trackBySemana" class="grid-row">
+            <div class="row-semana">
+              <span class="semana-num">{{ semana.numero }}</span>
+            </div>
+            <div
+              *ngFor="let celda of semana.celdas; trackBy: trackByCelda"
+              class="row-celda"
+              [class.tiene-menu]="tieneMenu(celda)"
+              [class.vacia]="!tieneMenu(celda)"
+              [class.seleccionada]="celdaSeleccionada === celda"
+              [class.hoy]="esHoy(celda)"
+              (click)="seleccionarCelda(celda)"
+            >
+              <ng-container *ngIf="tieneMenu(celda)">
+                <span class="celda-nombre">{{ celda.nombre_menu }}</span>
+              </ng-container>
+              <span *ngIf="!tieneMenu(celda)" class="celda-vacia">—</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Panel detalle desktop -->
+        <div class="detalle-menu" *ngIf="celdaSeleccionada">
+          <div class="detalle-card">
+            <div class="detalle-header">
+              <div class="detalle-info">
+                <span class="detalle-dia">{{ getNombreDia(celdaSeleccionada.dia) }}</span>
+                <span class="detalle-semana">Semana {{ celdaSeleccionada.semana }}</span>
+              </div>
+              <button class="detalle-cerrar" (click)="cerrarDetalle()">
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
+            <div class="detalle-body">
+              <div class="detalle-nombre-wrap">
+                <img class="detalle-icono" src="/assets/images/menu-alimentacion.png" alt="" />
+                <h3 class="detalle-nombre">{{ celdaSeleccionada.nombre_menu }}</h3>
+              </div>
+              <p class="detalle-descripcion" *ngIf="celdaSeleccionada.descripcion_menu">
+                {{ celdaSeleccionada.descripcion_menu }}
+              </p>
+              <p class="detalle-sin-desc" *ngIf="!celdaSeleccionada.descripcion_menu">
+                No hay descripción disponible para este menú.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============================== -->
+      <!-- VISTA MÓVIL - Tarjetas          -->
+      <!-- ============================== -->
+      <div class="vista-mobile" *ngIf="!isLoading && !errorMessage && esMobile">
+
+        <!-- Banner HOY -->
+        <div class="mobile-banner-hoy" *ngIf="menuHoy" (click)="scrollAHoy()">
+          <div class="banner-hoy-izq">
+            <span class="banner-hoy-label">Hoy</span>
+            <span class="banner-hoy-dia">{{ getNombreDia(diaHoy) }} — Semana {{ semanaHoy }}</span>
+          </div>
+          <div class="banner-hoy-der">
+            <span class="banner-hoy-menu">{{ menuHoy.nombre_menu }}</span>
+            <span class="banner-hoy-tap">Toca para ver <i class="fas fa-chevron-down"></i></span>
+          </div>
+        </div>
+
+        <div *ngFor="let semana of semanas; trackBy: trackBySemana" class="mobile-semana">
+          <!-- Cabecera semana -->
+          <div class="mobile-semana-header">
+            <span class="mobile-semana-num">Semana {{ semana.numero }}</span>
+          </div>
+
+          <!-- Días -->
+          <div *ngFor="let celda of semana.celdas; trackBy: trackByCelda" class="mobile-dia-card"
+               [class.vacia]="!tieneMenu(celda)"
+               [class.hoy]="esHoy(celda)"
+               [id]="esHoy(celda) ? 'celda-hoy' : null"
+               (click)="seleccionarCelda(celda)">
+
+            <div class="mobile-dia-header">
+              <div class="mobile-dia-badge">{{ getNombreDiaCorto(celda.dia) }}</div>
+              <span class="mobile-dia-nombre-dia">{{ getNombreDia(celda.dia) }}</span>
+            </div>
+
+            <ng-container *ngIf="tieneMenu(celda)">
+              <div class="mobile-dia-menu">
+                <div class="mobile-menu-info">
+                  <span class="mobile-menu-nombre">{{ celda.nombre_menu }}</span>
+                  <span class="mobile-menu-desc" *ngIf="celda.descripcion_menu">{{ celda.descripcion_menu }}</span>
+                </div>
+              </div>
+            </ng-container>
+
+            <span *ngIf="!tieneMenu(celda)" class="mobile-sin-menu">Sin menú asignado</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>

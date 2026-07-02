@@ -1,0 +1,453 @@
+<div class="modulo">
+  <app-header
+    [tituloModulo]="titulo"
+    [mostrarCrear]="false"
+    [accion]="'ConsultarTodos'"
+    [raiz]="'/menu'"
+    [regresar]="'/menu'"
+  ></app-header>
+
+  <div class="container-fluid mt-3 px-4">
+
+    <!-- ================================ -->
+    <!-- VISTA: LISTA DE ESTUDIANTES      -->
+    <!-- ================================ -->
+    <div *ngIf="vistaActual === 'estudiantes'" class="fade-in">
+      <p class="subtitulo">Seleccione un estudiante para gestionar sus personas autorizadas</p>
+
+      <div class="loading-container" *ngIf="cargando">
+        <div class="spinner"></div>
+        <span>Cargando...</span>
+      </div>
+
+      <div class="estudiantes-grid" *ngIf="!cargando">
+        <div
+          class="estudiante-card"
+          *ngFor="let est of estudiantes"
+          (click)="seleccionarEstudiante(est)"
+        >
+          <div class="est-avatar">
+            {{ est.primer_nombre?.charAt(0) }}{{ est.primer_apellido?.charAt(0) }}
+          </div>
+          <div class="est-info">
+            <span class="est-nombre">{{ est.primer_nombre }} {{ est.segundo_nombre }} {{ est.primer_apellido }} {{ est.segundo_apellido }}</span>
+            <span class="est-grupo">{{ est.nombre_grupo || 'Sin grupo' }}</span>
+          </div>
+          <i class="fas fa-chevron-right est-arrow"></i>
+        </div>
+      </div>
+
+      <div class="empty-state" *ngIf="!cargando && estudiantes.length === 0">
+        <i class="fas fa-child"></i>
+        <p>No se encontraron estudiantes asociados</p>
+      </div>
+    </div>
+
+    <!-- ================================ -->
+    <!-- VISTA: AUTORIZADOS POR ESTUDIANTE -->
+    <!-- ================================ -->
+    <div *ngIf="vistaActual === 'autorizados'" class="fade-in">
+      <div class="vista-header">
+        <button class="btn-volver" (click)="volverAEstudiantes()">
+          <i class="fas fa-arrow-left"></i> Volver
+        </button>
+        <div class="vista-titulo">
+          <span class="est-nombre-header">{{ estudianteSeleccionado?.primer_nombre }} {{ estudianteSeleccionado?.primer_apellido }}</span>
+          <span class="est-subtitulo-header">Personas autorizadas para recoger</span>
+        </div>
+        <button class="btn-agregar" (click)="mostrarFormulario()">
+          <i class="fas fa-plus"></i> Agregar
+        </button>
+      </div>
+
+      <div class="loading-container" *ngIf="cargando">
+        <div class="spinner"></div>
+        <span>Cargando...</span>
+      </div>
+
+      <div class="autorizados-lista" *ngIf="!cargando">
+
+        <!-- Acudientes autorizados para recoger -->
+        <div *ngIf="acudientesAutorizados.length > 0" class="seccion-acudientes">
+          <h6 class="section-label-lista"><i class="fas fa-users"></i> Acudientes autorizados</h6>
+          <div
+            class="autorizado-card acudiente-card"
+            *ngFor="let acu of acudientesAutorizados"
+          >
+            <div class="aut-foto-container">
+              <img
+                [src]="acu.foto ? obtenerUrlFoto(acu.foto) : '/assets/images/foto.png'"
+                alt="Foto"
+                class="aut-foto"
+                onerror="this.src='/assets/images/foto.png'"
+              />
+            </div>
+            <div class="aut-info">
+              <span class="aut-nombre">{{ acu.nombre_persona }}</span>
+              <span class="aut-documento">
+                <i class="fas fa-id-card"></i> {{ acu.documento_acudiente || 'Sin documento' }}
+              </span>
+              <div class="aut-badges">
+                <span class="badge-tipo acudiente">{{ acu.nombre_tipo_acudiente }}</span>
+                <span class="badge-estado activo">Autorizado</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Autorizados especiales -->
+        <div *ngIf="autorizados.length > 0" class="seccion-autorizados">
+          <h6 class="section-label-lista"><i class="fas fa-user-shield"></i> Autorizados adicionales</h6>
+        </div>
+
+        <div
+          class="autorizado-card"
+          *ngFor="let aut of autorizados"
+          [class.inactivo]="!estaActivo(aut)"
+        >
+          <div class="aut-foto-container" (click)="verDetalle(aut)">
+            <img
+              [src]="aut.foto ? obtenerUrlFoto(aut.foto) : '/assets/images/foto.png'"
+              alt="Foto"
+              class="aut-foto"
+              onerror="this.src='/assets/images/foto.png'"
+            />
+          </div>
+          <div class="aut-info" (click)="verDetalle(aut)">
+            <span class="aut-nombre">{{ aut.nombre_persona }}</span>
+            <span class="aut-documento">
+              <i class="fas fa-id-card"></i> {{ aut.documento_persona || 'Sin documento' }}
+            </span>
+            <div class="aut-badges">
+              <span class="badge-tipo" [class.permanente]="aut.id_tipo_autorizacion == 1" [class.temporal]="aut.id_tipo_autorizacion == 2">
+                {{ getNombreTipoAutorizacion(aut) }}
+              </span>
+              <span class="badge-estado" [class.activo]="estaActivo(aut)" [class.inactivo]="!estaActivo(aut)">
+                {{ estaActivo(aut) ? 'Activo' : 'Inactivo' }}
+              </span>
+            </div>
+          </div>
+          <div class="aut-acciones">
+            <button class="btn-icon" title="Autorizar un día" (click)="autorizarDia(aut)" *ngIf="estaActivo(aut) && aut.id_tipo_autorizacion == 2">
+              <i class="fas fa-calendar-plus"></i>
+            </button>
+            <button class="btn-icon" [title]="estaActivo(aut) ? 'Desactivar' : 'Activar'" (click)="toggleActivo(aut)">
+              <i [class]="estaActivo(aut) ? 'fas fa-toggle-on toggle-on' : 'fas fa-toggle-off toggle-off'"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="empty-state" *ngIf="!cargando && autorizados.length === 0 && acudientesAutorizados.length === 0">
+        <i class="fas fa-user-shield"></i>
+        <p>No hay personas autorizadas registradas</p>
+        <button class="btn-agregar-empty" (click)="mostrarFormulario()">
+          <i class="fas fa-plus"></i> Agregar persona
+        </button>
+      </div>
+    </div>
+
+    <!-- ================================ -->
+    <!-- VISTA: FORMULARIO NUEVA PERSONA  -->
+    <!-- ================================ -->
+    <div *ngIf="vistaActual === 'formulario'" class="fade-in">
+      <div class="vista-header">
+        <button class="btn-volver" (click)="volverAAutorizados()">
+          <i class="fas fa-arrow-left"></i> Volver
+        </button>
+        <div class="vista-titulo">
+          <span class="est-nombre-header">Nueva persona autorizada</span>
+          <span class="est-subtitulo-header">Para: {{ estudianteSeleccionado?.primer_nombre }} {{ estudianteSeleccionado?.primer_apellido }}</span>
+        </div>
+      </div>
+
+      <div class="formulario-card">
+        <!-- Documento -->
+        <div class="form-section">
+          <h6 class="section-label"><i class="fas fa-id-card"></i> Identificación</h6>
+          <div class="row">
+            <div class="col-sm-12 col-md-4">
+              <label class="form-label">Tipo documento <span class="req">*</span></label>
+              <select
+                class="form-select form-select-lg"
+                [(ngModel)]="model.tipoIdentificacion"
+                [disabled]="documentoEncontrado"
+                [ngClass]="{'is-invalid': !model.tipoIdentificacion && submitted}"
+              >
+                <option value="">Seleccionar</option>
+                <ng-container *ngFor="let ti of tiposIdentificacion">
+                  <option [value]="ti.id">{{ ti.nombre }}</option>
+                </ng-container>
+              </select>
+            </div>
+            <div class="col-sm-12 col-md-4">
+              <label class="form-label">Número documento <span class="req">*</span></label>
+              <input
+                class="form-control form-control-lg"
+                type="text"
+                [(ngModel)]="model.numeroIdentificacion"
+                [disabled]="documentoEncontrado"
+                [ngClass]="{'is-invalid': !model.numeroIdentificacion && submitted}"
+              />
+            </div>
+            <div class="col-sm-12 col-md-4 d-flex align-items-end">
+              <button class="btn-verificar" (click)="verificarDocumento()" *ngIf="!documentoEncontrado">
+                <i class="fas fa-search"></i> Verificar
+              </button>
+              <span class="badge-encontrado" *ngIf="documentoEncontrado">
+                <i class="fas fa-check-circle"></i> Persona encontrada
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Datos personales -->
+        <div class="form-section" [class.disabled-section]="!camposHabilitados">
+          <h6 class="section-label"><i class="fas fa-user"></i> Datos personales</h6>
+          <div class="row">
+            <div class="col-sm-12 col-md-6">
+              <label class="form-label">Primer nombre <span class="req">*</span></label>
+              <input class="form-control" type="text" [(ngModel)]="model.primerNombre"
+                [disabled]="!camposHabilitados || documentoEncontrado"
+                [ngClass]="{'is-invalid': !model.primerNombre && submitted}" />
+            </div>
+            <div class="col-sm-12 col-md-6">
+              <label class="form-label">Segundo nombre</label>
+              <input class="form-control" type="text" [(ngModel)]="model.segundoNombre"
+                [disabled]="!camposHabilitados || documentoEncontrado" />
+            </div>
+          </div>
+          <div class="row mt-2">
+            <div class="col-sm-12 col-md-6">
+              <label class="form-label">Primer apellido <span class="req">*</span></label>
+              <input class="form-control" type="text" [(ngModel)]="model.primerApellido"
+                [disabled]="!camposHabilitados || documentoEncontrado"
+                [ngClass]="{'is-invalid': !model.primerApellido && submitted}" />
+            </div>
+            <div class="col-sm-12 col-md-6">
+              <label class="form-label">Segundo apellido</label>
+              <input class="form-control" type="text" [(ngModel)]="model.segundoApellido"
+                [disabled]="!camposHabilitados || documentoEncontrado" />
+            </div>
+          </div>
+          <div class="row mt-2">
+            <div class="col-sm-12 col-md-6">
+              <label class="form-label">Teléfono</label>
+              <input class="form-control" type="text" [(ngModel)]="model.telefono"
+                [disabled]="!camposHabilitados || documentoEncontrado" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Tipo autorización + fecha -->
+        <div class="form-section" [class.disabled-section]="!camposHabilitados">
+          <h6 class="section-label"><i class="fas fa-shield-alt"></i> Autorización</h6>
+          <div class="row">
+            <div class="col-sm-12 col-md-6">
+              <label class="form-label">Tipo de autorización <span class="req">*</span></label>
+              <select class="form-select" [(ngModel)]="model.tipoAutorizacion"
+                [disabled]="!camposHabilitados"
+                [ngClass]="{'is-invalid': !model.tipoAutorizacion && submitted}">
+                <option value="">Seleccionar</option>
+                <ng-container *ngFor="let ta of tiposAutorizacion">
+                  <option [value]="ta.id">{{ ta.nombre }}</option>
+                </ng-container>
+              </select>
+            </div>
+            <div class="col-sm-12 col-md-6" *ngIf="model.tipoAutorizacion == '2'">
+              <label class="form-label">Fecha autorizada <span class="req">*</span></label>
+              <input class="form-control" type="date" [(ngModel)]="model.fechaAutorizada"
+                [disabled]="!camposHabilitados"
+                [ngClass]="{'is-invalid': !model.fechaAutorizada && model.tipoAutorizacion == '2' && submitted}" />
+              <small class="form-text text-muted">Día en que podrá recoger</small>
+            </div>
+          </div>
+          <div class="row mt-2">
+            <div class="col-12">
+              <label class="form-label">Observaciones</label>
+              <textarea class="form-control" rows="2" [(ngModel)]="model.observaciones"
+                [disabled]="!camposHabilitados"
+                placeholder="Parentesco, motivo, etc."></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- Botones guardar -->
+        <div class="form-actions" *ngIf="camposHabilitados && !guardado">
+          <button class="btn-guardar" (click)="guardar()">
+            <i class="fas fa-save"></i> Guardar
+          </button>
+          <button class="btn-cancelar" (click)="volverAAutorizados()">
+            <i class="fas fa-times"></i> Cancelar
+          </button>
+        </div>
+
+        <!-- Foto y Documentos (aparecen despues de guardar) -->
+        <div *ngIf="guardado && model.idPersona > 0" class="form-section mt-3">
+          <div class="guardado-exito">
+            <i class="fas fa-check-circle"></i> Persona autorizada guardada correctamente
+          </div>
+
+          <h6 class="section-label mt-3"><i class="fas fa-camera"></i> Foto</h6>
+          <app-foto-persona
+            [idPersona]="model.idPersona"
+            [nombrePersona]="obtenerNombreCompleto()"
+            [soloLectura]="false"
+          ></app-foto-persona>
+
+          <h6 class="section-label mt-3"><i class="fas fa-file-alt"></i> Documentos</h6>
+          <app-documentos-persona
+            [idPersona]="model.idPersona"
+            [tipoPersona]="'autorizado'"
+            [nombrePersona]="obtenerNombreCompleto()"
+            [soloLectura]="false"
+          ></app-documentos-persona>
+
+          <div class="form-actions mt-3">
+            <button class="btn-guardar" (click)="volverAAutorizados()">
+              <i class="fas fa-check"></i> Finalizar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================================ -->
+    <!-- VISTA: DETALLE / EDITAR          -->
+    <!-- ================================ -->
+    <div *ngIf="vistaActual === 'detalle' && autorizadoSeleccionado" class="fade-in">
+      <div class="vista-header">
+        <button class="btn-volver" (click)="volverAAutorizados()">
+          <i class="fas fa-arrow-left"></i> Volver
+        </button>
+        <div class="vista-titulo">
+          <span class="est-nombre-header">{{ modelEditar.primerNombre }} {{ modelEditar.primerApellido }}</span>
+          <span class="est-subtitulo-header">{{ autorizadoSeleccionado.documento_persona }}</span>
+        </div>
+      </div>
+
+      <!-- Grid: Info editable + Foto -->
+      <div class="detalle-grid">
+        <!-- Info editable -->
+        <div class="detalle-card">
+          <h6 class="section-label"><i class="fas fa-edit"></i> Datos de la persona</h6>
+
+          <!-- Documento (solo lectura) -->
+          <div class="info-row">
+            <span class="info-label">Documento</span>
+            <span class="info-value">{{ autorizadoSeleccionado.documento_persona }}</span>
+          </div>
+
+          <!-- Campos editables -->
+          <div class="row mt-3">
+            <div class="col-sm-12 col-md-6">
+              <label class="form-label">Primer nombre <span class="req">*</span></label>
+              <input class="form-control" type="text" [(ngModel)]="modelEditar.primerNombre" />
+            </div>
+            <div class="col-sm-12 col-md-6">
+              <label class="form-label">Segundo nombre</label>
+              <input class="form-control" type="text" [(ngModel)]="modelEditar.segundoNombre" />
+            </div>
+          </div>
+          <div class="row mt-2">
+            <div class="col-sm-12 col-md-6">
+              <label class="form-label">Primer apellido <span class="req">*</span></label>
+              <input class="form-control" type="text" [(ngModel)]="modelEditar.primerApellido" />
+            </div>
+            <div class="col-sm-12 col-md-6">
+              <label class="form-label">Segundo apellido</label>
+              <input class="form-control" type="text" [(ngModel)]="modelEditar.segundoApellido" />
+            </div>
+          </div>
+          <div class="row mt-2">
+            <div class="col-sm-12 col-md-6">
+              <label class="form-label">Teléfono</label>
+              <input class="form-control" type="text" [(ngModel)]="modelEditar.telefono" />
+            </div>
+          </div>
+
+          <h6 class="section-label mt-3"><i class="fas fa-shield-alt"></i> Autorización</h6>
+          <div class="row">
+            <div class="col-sm-12 col-md-6">
+              <label class="form-label">Tipo</label>
+              <select class="form-select" [(ngModel)]="modelEditar.tipoAutorizacion">
+                <ng-container *ngFor="let ta of tiposAutorizacion">
+                  <option [value]="ta.id">{{ ta.nombre }}</option>
+                </ng-container>
+              </select>
+            </div>
+            <div class="col-sm-12 col-md-6">
+              <label class="form-label">Estado</label>
+              <select class="form-select" [(ngModel)]="modelEditar.activo">
+                <option [value]="1">Activo</option>
+                <option [value]="0">Inactivo</option>
+              </select>
+            </div>
+          </div>
+          <div class="row mt-2">
+            <div class="col-12">
+              <label class="form-label">Observaciones</label>
+              <textarea class="form-control" rows="2" [(ngModel)]="modelEditar.observaciones"></textarea>
+            </div>
+          </div>
+          <div class="info-row mt-2">
+            <span class="info-label">Autorizado por</span>
+            <span class="info-value">{{ autorizadoSeleccionado.nombre_persona_autoriza }}</span>
+          </div>
+
+          <div class="detalle-acciones mt-3">
+            <button class="btn-guardar" (click)="guardarEdicion()">
+              <i class="fas fa-save"></i> Guardar cambios
+            </button>
+            <button class="btn-autorizar-dia" (click)="autorizarDia(autorizadoSeleccionado)" *ngIf="modelEditar.tipoAutorizacion == '2'">
+              <i class="fas fa-calendar-plus"></i> Autorizar un día
+            </button>
+          </div>
+        </div>
+
+        <!-- Foto -->
+        <div class="detalle-card">
+          <h6 class="section-label"><i class="fas fa-camera"></i> Foto</h6>
+          <app-foto-persona
+            [idPersona]="autorizadoSeleccionado.id_persona"
+            [nombrePersona]="autorizadoSeleccionado.nombre_persona"
+            [soloLectura]="false"
+          ></app-foto-persona>
+        </div>
+      </div>
+
+      <!-- Documentos -->
+      <div class="detalle-card mt-3">
+        <h6 class="section-label"><i class="fas fa-file-alt"></i> Documentos</h6>
+        <app-documentos-persona
+          [idPersona]="autorizadoSeleccionado.id_persona"
+          [tipoPersona]="'autorizado'"
+          [nombrePersona]="autorizadoSeleccionado.nombre_persona"
+          [soloLectura]="false"
+        ></app-documentos-persona>
+      </div>
+
+      <!-- Historial -->
+      <div class="detalle-card mt-3">
+        <h6 class="section-label"><i class="fas fa-history"></i> Historial de autorizaciónes</h6>
+        <div class="historial-lista" *ngIf="historial.length > 0">
+          <div class="historial-item" *ngFor="let h of historial">
+            <div class="historial-fecha">
+              <i class="fas fa-calendar-check"></i>
+              {{ h.fecha_autorizada | date:'dd/MM/yyyy' }}
+            </div>
+            <div class="historial-detalle">
+              <span class="historial-autorizo">Autorizado por: {{ h.nombre_persona_autoriza }}</span>
+              <span class="historial-obs" *ngIf="h.observaciones">{{ h.observaciones }}</span>
+            </div>
+          </div>
+        </div>
+        <div class="empty-state-sm" *ngIf="historial.length === 0">
+          <i class="fas fa-history"></i>
+          <p>No hay registros en el historial</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>

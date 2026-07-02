@@ -1,0 +1,159 @@
+<div class="horario-container">
+  <!-- Fondo -->
+  <div class="background-image"></div>
+  <div class="background-overlay"></div>
+
+  <!-- Decoraciones -->
+  <div class="deco deco-1"></div>
+  <div class="deco deco-2"></div>
+  <div class="deco deco-3"></div>
+
+  <!-- Header -->
+  <app-header
+    [tituloModulo]="titulo"
+    [mostrarCrear]="false"
+    [raiz]="'/info-padres/horario'"
+    [regresar]="'/info-padres'"
+    [iconoTitulo]="'/assets/images/horario.png'"
+  ></app-header>
+
+  <!-- Contenido -->
+  <div class="main-content">
+    <div class="content-wrapper">
+
+      <!-- Título -->
+      <div class="seccion-intro">
+        <h2>
+          <img class="intro-icono" src="/assets/images/horario.png" alt="" />
+          Horario de Clases
+        </h2>
+        <p>Consulta las actividades semanales de cada grupo</p>
+      </div>
+
+      <!-- Selector de estudiantes (solo si hay más de 1) -->
+      <div class="selector-estudiantes" *ngIf="estudiantes.length > 1">
+        <div
+          *ngFor="let est of estudiantes; trackBy: trackByEstudiante"
+          class="tab-estudiante"
+          [class.activo]="estudianteActivo?.id_estudiante === est.id_estudiante"
+          (click)="seleccionarEstudiante(est)"
+        >
+          <span class="tab-nombre">{{ est.nombre_completo }}</span>
+          <span class="tab-grupo">{{ est.nombre_grupo }}</span>
+        </div>
+      </div>
+
+      <!-- Info grupo actual -->
+      <div class="grupo-info" *ngIf="estudianteActivo && !isLoading">
+        <span class="grupo-badge">
+          {{ estudianteActivo.nombre_grupo }}
+        </span>
+        <span class="grupo-estudiante" *ngIf="estudiantes.length === 1">
+          {{ estudianteActivo.nombre_completo }}
+        </span>
+      </div>
+
+      <!-- Loading -->
+      <div class="loading-state" *ngIf="isLoading">
+        <div class="spinner"></div>
+        <p>Cargando horario...</p>
+      </div>
+
+      <!-- Error -->
+      <div class="error-state" *ngIf="errorMessage && !isLoading">
+        <div class="error-card">
+          <h3>{{ errorMessage }}</h3>
+        </div>
+      </div>
+
+      <!-- Sin horarios -->
+      <div class="empty-state" *ngIf="!isLoading && !errorMessage && horarios.length === 0">
+        <div class="empty-card">
+          <img src="/assets/images/horario.png" alt="" class="empty-icono" />
+          <h3>No hay horarios configurados</h3>
+          <p>Aún no se ha asignado un horario para este grupo.</p>
+        </div>
+      </div>
+
+      <!-- ============================== -->
+      <!-- VISTA DESKTOP - Grilla          -->
+      <!-- ============================== -->
+      <div class="vista-desktop" *ngIf="!isLoading && !errorMessage && horarios.length > 0 && !esMobile">
+
+        <div class="horario-grid" [style.--dias-count]="diasConHorario.length">
+          <!-- Header días -->
+          <div class="grid-header">
+            <div class="header-hora">Hora</div>
+            <div
+              *ngFor="let dia of diasConHorario; trackBy: trackByDia"
+              class="header-dia"
+              [class.dia-hoy]="esDiaHoy(dia.id)"
+            >
+              {{ dia.corto }}
+              <span class="hoy-badge" *ngIf="esDiaHoy(dia.id)">Hoy</span>
+            </div>
+          </div>
+
+          <!-- Filas por franja horaria -->
+          <div *ngFor="let franja of franjasHorarias; trackBy: trackByFranja" class="grid-row">
+            <div class="row-hora">{{ franja.hora }}</div>
+
+            <div
+              *ngFor="let dia of diasConHorario; trackBy: trackByDia"
+              class="row-celda"
+              [class.dia-hoy-col]="esDiaHoy(dia.id)"
+            >
+              <ng-container *ngIf="esInicioBloque(dia.id, franja)">
+                <div
+                  class="bloque-clase"
+                  [style.height.px]="getCantidadFranjas(getBloqueEnFranja(dia.id, franja)!) * 38"
+                  [style.border-left-color]="getBloqueEnFranja(dia.id, franja)!.area_academica_color"
+                  [style.background]="getBloqueEnFranja(dia.id, franja)!.area_academica_color + '18'"
+                >
+                  <span class="bloque-area">{{ getBloqueEnFranja(dia.id, franja)!.area_academica_nombre }}</span>
+                  <span class="bloque-docente" *ngIf="getBloqueEnFranja(dia.id, franja)!.docente_nombre_completo">
+                    {{ getBloqueEnFranja(dia.id, franja)!.docente_nombre_completo }}
+                  </span>
+                </div>
+              </ng-container>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============================== -->
+      <!-- VISTA MÓVIL - Lista por día     -->
+      <!-- ============================== -->
+      <div class="vista-mobile" *ngIf="!isLoading && !errorMessage && horarios.length > 0 && esMobile">
+
+        <div *ngFor="let dia of diasConHorario; trackBy: trackByDia" class="mobile-dia"
+             [class.mobile-dia-hoy]="esDiaHoy(dia.id)"
+             [id]="esDiaHoy(dia.id) ? 'dia-hoy-mobile' : null">
+
+          <div class="mobile-dia-header">
+            <span class="mobile-dia-nombre">{{ dia.nombre }}</span>
+            <span class="mobile-hoy-tag" *ngIf="esDiaHoy(dia.id)">Hoy</span>
+          </div>
+
+          <div *ngFor="let bloque of getHorariosPorDia(dia.id)" class="mobile-bloque"
+               [style.border-left-color]="bloque.area_academica_color"
+               [style.background]="bloque.area_academica_color + '12'">
+            <div class="mobile-bloque-hora">
+              {{ getHoraCorta(bloque.hora_inicial) }} - {{ getHoraCorta(bloque.hora_final) }}
+            </div>
+            <div class="mobile-bloque-info">
+              <span class="mobile-bloque-area">{{ bloque.area_academica_nombre }}</span>
+              <span class="mobile-bloque-docente" *ngIf="bloque.docente_nombre_completo">
+                {{ bloque.docente_nombre_completo }}
+              </span>
+            </div>
+            <div class="mobile-bloque-color"
+                 [style.background]="bloque.area_academica_color">
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>

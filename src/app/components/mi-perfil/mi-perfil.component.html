@@ -1,0 +1,435 @@
+<div class="modulo">
+  <app-header
+    [tituloModulo]="titulo"
+    [mostrarCrear]="false"
+    [regresar]="regresar"
+    [iconoTitulo]="'/assets/images/perfil.png'"
+  ></app-header>
+
+  <!-- Modal Habeas Data - Bloqueante -->
+  <app-habeas-data-modal
+    *ngIf="mostrarHabeasData"
+    [idUsuario]="usuario?.id"
+    [idPersona]="usuario?.id_persona"
+    (autorizado)="onHabeasDataAutorizado()"
+    (errorPlantilla)="onHabeasDataError()"
+  >
+  </app-habeas-data-modal>
+
+  <!-- Foto del acudiente - Superior derecha -->
+  <div
+    class="foto-container"
+    *ngIf="habeasDataVerificado && model.idPersona > 0"
+  >
+    <app-foto-persona
+      [idPersona]="model.idPersona"
+      [nombrePersona]="obtenerNombreCompleto()"
+      [soloLectura]="!fotoAcudienteEditable"
+    >
+    </app-foto-persona>
+  </div>
+
+  <!-- Loader -->
+  <div *ngIf="cargando && habeasDataVerificado" class="text-center py-5">
+    <div class="spinner-border text-warning" role="status">
+      <span class="visually-hidden">Cargando...</span>
+    </div>
+    <p class="mt-3 text-muted">Cargando información...</p>
+  </div>
+
+  <div class="container mt-5" *ngIf="!cargando && habeasDataVerificado">
+    <!-- Tabs -->
+    <ul class="custom-tabs mb-4">
+      <li class="custom-tab-item">
+        <a
+          class="custom-tab-link"
+          [class.active]="seccionActiva === 'datos-personales'"
+          (click)="cambiarSeccion('datos-personales')"
+        >
+          <i class="fas fa-user-circle"></i> Datos Personales
+        </a>
+      </li>
+      <li class="custom-tab-item">
+        <a
+          class="custom-tab-link"
+          [class.active]="seccionActiva === 'documentos'"
+          (click)="cambiarSeccion('documentos')"
+        >
+          <i class="fas fa-file-alt"></i> Documentos
+        </a>
+      </li>
+      <li class="custom-tab-item">
+        <a
+          class="custom-tab-link"
+          [class.active]="seccionActiva === 'cambiar-clave'"
+          (click)="cambiarSeccion('cambiar-clave')"
+        >
+          <i class="fas fa-lock"></i> Cambiar Contraseña
+        </a>
+      </li>
+    </ul>
+
+    <!-- ========== TAB DATOS PERSONALES ========== -->
+    <div *ngIf="seccionActiva === 'datos-personales'">
+      <!-- Documento de identidad (READONLY) -->
+      <div class="row mb-4">
+        <div class="col-sm-12 col-md-6">
+          <label for="tipoDocumento" class="form-label"
+            >Tipo de documento <span class="text-danger">*</span></label
+          >
+          <select
+            class="form-select form-select-lg"
+            id="tipoDocumento"
+            [(ngModel)]="model.tipoIdentificacion"
+            disabled
+          >
+            <option value="">Seleccionar</option>
+            <ng-container *ngFor="let ti of listas.tiposIdentificacion">
+              <option [value]="ti.id">{{ ti.nombre }}</option>
+            </ng-container>
+          </select>
+        </div>
+        <div class="col-sm-12 col-md-6">
+          <label for="numeroDocumento" class="form-label"
+            >Número de documento <span class="text-danger">*</span></label
+          >
+          <input
+            class="form-control form-control-lg"
+            type="text"
+            id="numeroDocumento"
+            [(ngModel)]="model.numeroIdentificacion"
+            disabled
+          />
+        </div>
+      </div>
+      <hr />
+
+      <!-- Campos editables -->
+      <div class="row">
+        <div class="col-sm-12 col-md-6">
+          <label for="primerNombre" class="form-label"
+            >Primer nombre <span class="text-danger">*</span></label
+          >
+          <input
+            class="form-control form-control-lg"
+            type="text"
+            id="primerNombre"
+            [(ngModel)]="model.primerNombre"
+            [ngClass]="{ 'is-invalid': !model.primerNombre && submitted }"
+          />
+        </div>
+        <div class="col-sm-12 col-md-6">
+          <label for="segundoNombre" class="form-label">Segundo nombre</label>
+          <input
+            class="form-control form-control-lg"
+            type="text"
+            id="segundoNombre"
+            [(ngModel)]="model.segundoNombre"
+          />
+        </div>
+      </div>
+
+      <div class="row mt-3">
+        <div class="col-sm-12 col-md-6">
+          <label for="primerApellido" class="form-label"
+            >Primer apellido <span class="text-danger">*</span></label
+          >
+          <input
+            class="form-control form-control-lg"
+            type="text"
+            id="primerApellido"
+            [(ngModel)]="model.primerApellido"
+            [ngClass]="{ 'is-invalid': !model.primerApellido && submitted }"
+          />
+        </div>
+        <div class="col-sm-12 col-md-6">
+          <label for="segundoApellido" class="form-label"
+            >Segundo apellido</label
+          >
+          <input
+            class="form-control form-control-lg"
+            type="text"
+            id="segundoApellido"
+            [(ngModel)]="model.segundoApellido"
+          />
+        </div>
+      </div>
+
+      <div class="row mt-3">
+        <div class="col-sm-12 col-md-6">
+          <label for="nacionalidad" class="form-label">Nacionalidad</label>
+          <input
+            class="form-control form-control-lg"
+            type="text"
+            id="nacionalidad"
+            [(ngModel)]="model.nacionalidad"
+          />
+          <small class="form-text text-muted">Predeterminado: Colombiana</small>
+        </div>
+        <div class="col-sm-12 col-md-6">
+          <label for="fechaNacimiento" class="form-label"
+            >Fecha de nacimiento</label
+          >
+          <input
+            class="form-control form-control-lg"
+            type="date"
+            id="fechaNacimiento"
+            [(ngModel)]="model.fechaNacimiento"
+          />
+        </div>
+      </div>
+
+      <div class="row mt-3">
+        <div class="col-sm-12 col-md-6">
+          <label for="genero" class="form-label">Género</label>
+          <select
+            class="form-select form-select-lg"
+            id="genero"
+            [(ngModel)]="model.genero"
+          >
+            <option value="">Seleccionar</option>
+            <ng-container *ngFor="let g of listas.generos">
+              <option [value]="g.id">{{ g.nombre }}</option>
+            </ng-container>
+          </select>
+        </div>
+        <div class="col-sm-12 col-md-6">
+          <label for="rh" class="form-label">Grupo Sanguíneo (RH)</label>
+          <select
+            class="form-select form-select-lg"
+            id="rh"
+            [(ngModel)]="model.rh"
+          >
+            <option value="">Seleccionar</option>
+            <ng-container *ngFor="let rh of listas.gruposRh">
+              <option [value]="rh.id">{{ rh.nombre }}</option>
+            </ng-container>
+          </select>
+        </div>
+      </div>
+
+      <div class="row mt-3">
+        <div class="col-sm-12 col-md-6">
+          <label for="direccion" class="form-label">Dirección</label>
+          <input
+            class="form-control form-control-lg"
+            type="text"
+            id="direccion"
+            [(ngModel)]="model.direccion"
+          />
+        </div>
+        <div class="col-sm-12 col-md-6">
+          <label for="ciudad" class="form-label">Ciudad</label>
+          <select
+            class="form-select form-select-lg"
+            id="ciudad"
+            [(ngModel)]="model.ciudad"
+          >
+            <option value="">Seleccionar</option>
+            <ng-container *ngFor="let c of listas.ciudades">
+              <option [value]="c.id">{{ c.nombre }}</option>
+            </ng-container>
+          </select>
+        </div>
+      </div>
+
+      <div class="row mt-3">
+        <div class="col-sm-12 col-md-6">
+          <label for="correoElectronico" class="form-label"
+            >Correo electrónico</label
+          >
+          <input
+            class="form-control form-control-lg"
+            type="email"
+            id="correoElectronico"
+            [(ngModel)]="model.correoElectronico"
+            placeholder="ejemplo@correo.com"
+            pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$"
+            title="Ingrese un correo electrónico válido"
+          />
+          <small class="form-text text-muted"
+            >Formato: ejemplo&#64;correo.com</small
+          >
+        </div>
+        <div class="col-sm-12 col-md-6">
+          <label for="telefono" class="form-label">Teléfono</label>
+          <input
+            class="form-control form-control-lg"
+            type="tel"
+            id="telefono"
+            [(ngModel)]="model.telefono"
+            placeholder="Ej: 3001234567"
+            pattern="[0-9]{10}"
+            title="Ingrese un número de teléfono válido de 10 dígitos"
+          />
+          <small class="form-text text-muted"
+            >Ingrese un número de 10 dígitos sin espacios ni guiones</small
+          >
+        </div>
+      </div>
+
+      <div class="row mt-3">
+        <div class="col-sm-12 col-md-6">
+          <label for="ocupacion" class="form-label">Ocupación</label>
+          <input
+            class="form-control form-control-lg"
+            type="text"
+            id="ocupacion"
+            [(ngModel)]="model.ocupacion"
+          />
+        </div>
+      </div>
+
+      <!-- Botones -->
+      <div class="row mt-4">
+        <div class="col-12 d-flex gap-2">
+          <button
+            class="btn-save"
+            (click)="guardarDatos()"
+            [disabled]="guardando"
+          >
+            <span *ngIf="!guardando">
+              <i class="fas fa-save"></i> Guardar Datos Personales
+            </span>
+            <span *ngIf="guardando">
+              <span class="spinner-border spinner-border-sm"></span>
+              Guardando...
+            </span>
+          </button>
+          <button class="btn-cancel" (click)="volver()">
+            <i class="fas fa-times-circle"></i> Cancelar
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== TAB DOCUMENTOS ========== -->
+    <div *ngIf="seccionActiva === 'documentos'">
+      <div class="container mt-4">
+        <app-documentos-persona
+          [idPersona]="model.idPersona"
+          [tipoPersona]="'acudiente'"
+          [nombrePersona]="obtenerNombreCompleto()"
+          [soloLectura]="false"
+          [validarAcudientes]="true"
+        >
+        </app-documentos-persona>
+      </div>
+    </div>
+
+    <!-- ========== TAB CAMBIAR CONTRASEÑA ========== -->
+    <div *ngIf="seccionActiva === 'cambiar-clave'">
+      <div class="cambiar-clave-container">
+        <div class="usuario-info-clave">
+          <div class="avatar-clave">
+            <i class="fas fa-user-lock"></i>
+          </div>
+          <div class="info-clave">
+            <h3>{{ obtenerNombreCompleto() || 'Usuario' }}</h3>
+            <p>Cambia tu contraseña de acceso al sistema</p>
+          </div>
+        </div>
+
+        <div class="cambiar-clave-form">
+          <!-- Contraseña actual -->
+          <div class="form-group-clave">
+            <label class="form-label"><i class="fas fa-unlock"></i> Contraseña Actual</label>
+            <div class="password-input-container">
+              <input
+                [type]="mostrarClaveActual ? 'text' : 'password'"
+                [(ngModel)]="claveActual"
+                class="form-control form-control-lg"
+                placeholder="Ingresa tu contraseña actual"
+                [disabled]="cargandoClave"
+                autocomplete="current-password"
+              >
+              <button type="button" class="toggle-password" (click)="mostrarClaveActual = !mostrarClaveActual" [disabled]="cargandoClave">
+                <i [class]="mostrarClaveActual ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+              </button>
+            </div>
+            <div *ngIf="erroresClave.claveActual" class="error-message-clave">
+              {{ erroresClave.claveActual }}
+            </div>
+          </div>
+
+          <!-- Nueva contraseña -->
+          <div class="form-group-clave">
+            <label class="form-label"><i class="fas fa-lock"></i> Nueva Contraseña</label>
+            <div class="password-input-container">
+              <input
+                [type]="mostrarClaveNueva ? 'text' : 'password'"
+                [(ngModel)]="claveNueva"
+                class="form-control form-control-lg"
+                placeholder="Ingresa tu nueva contraseña"
+                [disabled]="cargandoClave"
+                (input)="validarCampoClave('claveNueva')"
+                autocomplete="new-password"
+              >
+              <button type="button" class="toggle-password" (click)="mostrarClaveNueva = !mostrarClaveNueva" [disabled]="cargandoClave">
+                <i [class]="mostrarClaveNueva ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+              </button>
+            </div>
+
+            <!-- Indicador de fortaleza -->
+            <div *ngIf="claveNueva" class="password-strength">
+              <div class="strength-bar">
+                <div class="strength-fill" [class]="getNivelFortaleza().clase" [style.width.%]="getNivelFortaleza().porcentaje"></div>
+              </div>
+              <span class="strength-text" [class]="getNivelFortaleza().clase">{{ getNivelFortaleza().nivel }}</span>
+            </div>
+
+            <div *ngIf="erroresClave.claveNueva" class="error-message-clave">
+              {{ erroresClave.claveNueva }}
+            </div>
+          </div>
+
+          <!-- Confirmar contraseña -->
+          <div class="form-group-clave">
+            <label class="form-label"><i class="fas fa-check-circle"></i> Confirmar Nueva Contraseña</label>
+            <div class="password-input-container">
+              <input
+                [type]="mostrarConfirmarClave ? 'text' : 'password'"
+                [(ngModel)]="confirmarClave"
+                class="form-control form-control-lg"
+                placeholder="Confirma tu nueva contraseña"
+                [disabled]="cargandoClave"
+                autocomplete="new-password"
+              >
+              <button type="button" class="toggle-password" (click)="mostrarConfirmarClave = !mostrarConfirmarClave" [disabled]="cargandoClave">
+                <i [class]="mostrarConfirmarClave ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+              </button>
+            </div>
+            <div *ngIf="erroresClave.confirmarClave" class="error-message-clave">
+              {{ erroresClave.confirmarClave }}
+            </div>
+          </div>
+
+          <!-- Recomendaciones -->
+          <div class="security-tips">
+            <h4><i class="fas fa-shield-alt"></i> Recomendaciones:</h4>
+            <ul>
+              <li [class.completed]="(claveNueva.length || 0) >= 6">Al menos 6 caracteres</li>
+              <li [class.completed]="tieneMinusculas()">Letras minúsculas</li>
+              <li [class.completed]="tieneMayusculas()">Letras mayúsculas</li>
+              <li [class.completed]="tieneNumeros()">Números</li>
+              <li [class.completed]="tieneSimbolos()">Símbolos especiales</li>
+            </ul>
+          </div>
+
+          <!-- Botones -->
+          <div class="row mt-4">
+            <div class="col-12 d-flex gap-2">
+              <button class="btn-save" (click)="cambiarClave()" [disabled]="cargandoClave">
+                <span *ngIf="!cargandoClave"><i class="fas fa-sync-alt"></i> Cambiar Contraseña</span>
+                <span *ngIf="cargandoClave"><span class="spinner-border spinner-border-sm"></span> Actualizando...</span>
+              </button>
+              <button class="btn-cancel" (click)="limpiarFormularioClave()">
+                <i class="fas fa-eraser"></i> Limpiar
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

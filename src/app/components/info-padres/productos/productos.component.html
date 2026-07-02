@@ -1,0 +1,126 @@
+<div class="productos-container">
+  <!-- Fondo con imagen difuminada -->
+  <div class="background-image"></div>
+  <div class="background-overlay"></div>
+
+  <!-- Header -->
+  <app-header
+    [tituloModulo]="titulo"
+    [mostrarCrear]="false"
+    [raiz]="'/info-padres/productos'"
+    [regresar]="'/info-padres'"
+    [iconoTitulo]="'/assets/images/servicios-alimentacion.png'"
+  ></app-header>
+
+  <!-- Contenido principal -->
+  <div class="main-content">
+    <div class="content-wrapper">
+
+      <!-- Barra de búsqueda -->
+      <div class="search-bar" *ngIf="!isLoading && !errorMessage && secciones.length > 0">
+        <div class="search-input-wrapper">
+          <i class="fas fa-search search-icon"></i>
+          <input
+            type="text"
+            class="search-input"
+            placeholder="Buscar producto..."
+            [(ngModel)]="textoBusqueda"
+            (ngModelChange)="filtrarProductos()"
+          />
+          <button
+            class="search-clear"
+            *ngIf="textoBusqueda"
+            (click)="limpiarBusqueda()"
+          >
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <span class="search-count">
+          {{ totalFiltrados }} de {{ totalProductos }} producto{{ totalProductos !== 1 ? 's' : '' }}
+        </span>
+      </div>
+
+      <!-- Loading -->
+      <div class="loading-state" *ngIf="isLoading">
+        <div class="spinner"></div>
+        <p>Cargando productos...</p>
+      </div>
+
+      <!-- Error -->
+      <div class="error-state" *ngIf="errorMessage && !isLoading">
+        <div class="error-card">
+          <span class="error-icon">⚠️</span>
+          <h3>{{ errorMessage }}</h3>
+          <p>Intenta recargar la página</p>
+        </div>
+      </div>
+
+      <!-- Sin productos -->
+      <div class="empty-state" *ngIf="!isLoading && !errorMessage && secciones.length === 0">
+        <div class="empty-card">
+          <span class="empty-icon">📋</span>
+          <h3>Sin productos disponibles</h3>
+          <p>No hay productos registrados en este momento.</p>
+        </div>
+      </div>
+
+      <!-- Sin resultados de búsqueda -->
+      <div class="empty-state" *ngIf="!isLoading && !errorMessage && secciones.length > 0 && !tieneResultados()">
+        <div class="empty-card">
+          <span class="empty-icon">🔍</span>
+          <h3>Sin resultados</h3>
+          <p>No se encontraron productos para "{{ textoBusqueda }}"</p>
+        </div>
+      </div>
+
+      <!-- Secciones del catálogo -->
+      <div class="catalogo" *ngIf="!isLoading && !errorMessage && secciones.length > 0">
+
+        <ng-container *ngFor="let seccion of secciones; let i = index; trackBy: trackBySeccion">
+          <div
+            class="seccion-catalogo"
+            *ngIf="seccion.productosFiltrados.length > 0"
+            [style.animation-delay]="(i * 0.1) + 's'"
+          >
+            <!-- Header de sección -->
+            <div class="seccion-header" [ngClass]="seccion.colorClase" (click)="toggleSeccion(seccion)">
+              <div class="seccion-info">
+                <span class="seccion-icono">{{ seccion.icono }}</span>
+                <h2 class="seccion-titulo">{{ seccion.titulo }}</h2>
+                <span class="seccion-count">{{ seccion.productosFiltrados.length }}</span>
+              </div>
+              <span class="seccion-toggle" [class.abierta]="seccion.abierta">
+                <i class="fas fa-chevron-down"></i>
+              </span>
+            </div>
+
+            <!-- Productos de la sección -->
+            <div class="seccion-body" [class.visible]="seccion.abierta">
+              <div class="productos-grid">
+                <div
+                  *ngFor="let producto of seccion.productosFiltrados; let j = index; trackBy: trackByProducto"
+                  class="producto-card"
+                  [style.animation-delay]="(j * 0.06) + 's'"
+                >
+                  <div class="producto-content">
+                    <div class="producto-header">
+                      <h4 class="producto-nombre">{{ producto.nombre }}</h4>
+                      <span class="producto-periodicidad">{{ producto.nombre_periodicidad }}</span>
+                    </div>
+                    <p class="producto-detalles" *ngIf="producto.detalles">{{ producto.detalles }}</p>
+                    <div class="producto-footer">
+                      <span class="producto-precio">{{ formatearPrecio(producto.valor_sugerido) }}</span>
+                      <span class="producto-categoria">{{ producto.nombre_categoria }}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </ng-container>
+
+      </div>
+
+    </div>
+  </div>
+</div>

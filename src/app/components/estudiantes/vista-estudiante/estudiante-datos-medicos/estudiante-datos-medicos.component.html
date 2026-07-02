@@ -1,0 +1,98 @@
+<!-- Indicador de carga -->
+<div *ngIf="cargando" class="text-center py-4">
+  <div class="spinner-border text-warning spinner-border-sm" role="status">
+    <span class="visually-hidden">Cargando...</span>
+  </div>
+  <p class="text-muted mt-2">Cargando datos médicos...</p>
+</div>
+
+<!-- ==================== MODO CONSULTA ==================== -->
+<div *ngIf="!cargando && !modoEdicion">
+
+  <!-- Botón editar -->
+  <div class="edicion-actions mb-3">
+    <button class="btn-editar" (click)="activarEdicion()">
+      <i class="fas fa-pencil-alt"></i> Editar Datos Médicos
+    </button>
+  </div>
+
+  <div *ngIf="sinDatos" class="text-center py-4">
+    <p class="text-muted"><i class="fas fa-heartbeat me-2"></i>No hay datos médicos registrados para este estudiante.</p>
+  </div>
+
+  <div *ngIf="!sinDatos">
+    <div *ngFor="let grupo of grupos" class="grupo-datos">
+      <h6 class="grupo-titulo">
+        <span class="grupo-icono">{{ grupo.icono }}</span>
+        {{ grupo.nombre_tipo }}
+      </h6>
+      <div class="row">
+        <div *ngFor="let dato of grupo.datos" class="col-sm-12 col-md-6 mb-2">
+          <div class="dato-item">
+            <span class="dato-label">{{ dato.nombre }}</span>
+            <span class="dato-valor">{{ dato.valor_display || '-' }}</span>
+            <span *ngIf="dato.observacion" class="dato-observacion">{{ dato.observacion }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== MODO EDICIÓN ==================== -->
+<div *ngIf="!cargando && modoEdicion" class="edicion-container">
+  <div class="edicion-header">
+    <i class="fas fa-heartbeat me-2"></i> Editando datos médicos
+  </div>
+  <div class="edicion-body">
+    <div *ngFor="let grupo of gruposEdicion" class="edicion-seccion">
+      <h6 class="seccion-titulo">
+        <span class="me-2">{{ grupo.icono }}</span>{{ grupo.nombre_tipo }}
+      </h6>
+      <div class="row">
+        <div *ngFor="let dato of grupo.datos" class="col-sm-12 mb-3"
+          [ngClass]="{'col-md-6': !dato.es_parrafo, 'col-md-12': dato.es_parrafo}">
+
+          <label class="form-label">{{ dato.nombre }}</label>
+
+          <!-- Select cuando tiene opciones -->
+          <select *ngIf="dato.opciones.length > 0" class="form-select"
+            [(ngModel)]="dato.valor_texto">
+            <option value="">Seleccionar</option>
+            <option *ngFor="let op of dato.opciones" [value]="op">{{ op }}</option>
+          </select>
+
+          <!-- Input número -->
+          <input *ngIf="dato.es_numero && dato.opciones.length === 0" type="number" class="form-control"
+            [(ngModel)]="dato.valor_numero">
+
+          <!-- Input texto -->
+          <input *ngIf="dato.es_texto && dato.opciones.length === 0" type="text" class="form-control"
+            [(ngModel)]="dato.valor_texto">
+
+          <!-- Textarea párrafo -->
+          <textarea *ngIf="dato.es_parrafo && dato.opciones.length === 0" class="form-control" rows="3"
+            [(ngModel)]="dato.valor_parrafo"></textarea>
+
+          <!-- Input fecha -->
+          <input *ngIf="dato.es_fecha && dato.opciones.length === 0" type="date" class="form-control"
+            [(ngModel)]="dato.valor_fecha">
+
+          <!-- Observación -->
+          <input type="text" class="form-control mt-1 observacion-input" placeholder="Observación (opcional)"
+            [(ngModel)]="dato.observacion">
+        </div>
+      </div>
+    </div>
+
+    <div class="edicion-acciones">
+      <button class="btn-save" (click)="guardarDatos()" [disabled]="guardando">
+        <span *ngIf="!guardando"><i class="fas fa-save"></i> Guardar Cambios</span>
+        <span *ngIf="guardando"><span class="spinner-border spinner-border-sm"></span> Guardando...</span>
+      </button>
+      <button class="btn-cancel" (click)="cancelarEdicion()" [disabled]="guardando">
+        <i class="fas fa-times-circle"></i> Cancelar
+      </button>
+    </div>
+  </div>
+</div>

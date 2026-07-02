@@ -1,0 +1,48 @@
+<div class="info-padres-container">
+  <!-- Fondo con imagen difuminada -->
+  <div class="background-image"></div>
+  <div class="background-overlay"></div>
+
+  <!-- Header -->
+  <app-header
+    [tituloModulo]="titulo"
+    [mostrarCrear]="false"
+    [raiz]="'/info-padres'"
+    [regresar]="'/menu'"
+    [iconoTitulo]="'/assets/images/info-padres.png'"
+  ></app-header>
+
+  <!-- Contenido principal -->
+  <div class="main-content">
+    <div class="content-wrapper">
+
+      <!-- Título -->
+      <div class="seccion-titulo">
+        <h2>¿Qué deseas consultar?</h2>
+        <p>Selecciona una opción para ver la información</p>
+      </div>
+
+      <!-- Tarjetas -->
+      <div class="cards-grid">
+        <div
+          *ngFor="let opcion of opciones; let i = index"
+          class="card-opcion"
+          [style.animation-delay]="(i * 0.12) + 's'"
+          (click)="seleccionarOpcion(opcion.key)"
+        >
+          <div class="card-opcion-content">
+            <div class="icono-container" [ngClass]="opcion.colorClase">
+              <img [src]="opcion.icono" [alt]="opcion.titulo" />
+            </div>
+            <h3 class="card-titulo">{{ opcion.titulo }}</h3>
+            <p class="card-descripcion">{{ opcion.descripcion }}</p>
+            <div class="card-footer-custom">
+              <span class="link-accion">{{ opcion.accionTexto }} <i class="fas fa-arrow-right"></i></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>

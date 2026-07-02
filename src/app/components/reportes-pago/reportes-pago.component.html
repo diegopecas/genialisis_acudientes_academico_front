@@ -1,0 +1,364 @@
+<div class="modulo">
+  <app-header
+    [tituloModulo]="titulo"
+    [mostrarCrear]="false"
+    [accion]="'ConsultarTodos'"
+    [raiz]="'/menu'"
+    [regresar]="'/menu'"
+  ></app-header>
+
+  <div class="container-fluid mt-3 px-4">
+
+    <!-- ================================ -->
+    <!-- VISTA: LISTA DE ESTUDIANTES      -->
+    <!-- ================================ -->
+    <div *ngIf="vistaActual === 'estudiantes'" class="fade-in">
+      <p class="subtitulo">Seleccione un estudiante para reportar o consultar pagos</p>
+
+      <div class="loading-container" *ngIf="cargando">
+        <div class="spinner"></div>
+        <span>Cargando...</span>
+      </div>
+
+      <div class="estudiantes-grid" *ngIf="!cargando">
+        <div
+          class="estudiante-card"
+          *ngFor="let est of estudiantes"
+          (click)="seleccionarEstudiante(est)"
+        >
+          <div class="est-avatar">
+            {{ est.primer_nombre?.charAt(0) }}{{ est.primer_apellido?.charAt(0) }}
+          </div>
+          <div class="est-info">
+            <span class="est-nombre">{{ est.primer_nombre }} {{ est.segundo_nombre }} {{ est.primer_apellido }} {{ est.segundo_apellido }}</span>
+            <span class="est-grupo">{{ est.nombre_grupo || 'Sin grupo' }}</span>
+          </div>
+          <i class="fas fa-chevron-right est-arrow"></i>
+        </div>
+      </div>
+
+      <div class="empty-state" *ngIf="!cargando && estudiantes.length === 0">
+        <i class="fas fa-child"></i>
+        <p>No se encontraron estudiantes asociados</p>
+      </div>
+    </div>
+
+    <!-- ================================ -->
+    <!-- VISTA: REPORTES POR ESTUDIANTE   -->
+    <!-- ================================ -->
+    <div *ngIf="vistaActual === 'reportes'" class="fade-in">
+      <div class="vista-header">
+        <button class="btn-volver" (click)="volverAEstudiantes()">
+          <i class="fas fa-arrow-left"></i> Volver
+        </button>
+        <div class="vista-titulo">
+          <span class="est-nombre-header">{{ estudianteSeleccionado?.primer_nombre }} {{ estudianteSeleccionado?.primer_apellido }}</span>
+          <span class="est-subtitulo-header">Reportes de pago</span>
+        </div>
+        <button class="btn-agregar" (click)="mostrarFormulario()">
+          <i class="fas fa-plus"></i> Reportar Pago
+        </button>
+      </div>
+
+      <div class="loading-container" *ngIf="cargando">
+        <div class="spinner"></div>
+        <span>Cargando...</span>
+      </div>
+
+      <div class="reportes-lista" *ngIf="!cargando">
+        <div
+          class="reporte-card"
+          *ngFor="let rep of reportes"
+          [class.asociado]="rep.estado === 'asociado'"
+          (click)="verDetalle(rep)"
+        >
+          <div class="rep-icon-container">
+            <i class="fas" [class.fa-check-circle]="rep.estado === 'asociado'" [class.fa-clock]="rep.estado === 'pendiente'"
+              [class.icon-asociado]="rep.estado === 'asociado'" [class.icon-pendiente]="rep.estado === 'pendiente'"></i>
+          </div>
+          <div class="rep-info">
+            <span class="rep-valor">{{ formatearMoneda(rep.valor) }}</span>
+            <span class="rep-detalle">
+              {{ rep.nombre_tipo_pago }} · {{ rep.fecha_pago | date:'dd/MM/yyyy' }}
+            </span>
+            <span class="rep-colaborador">
+              <i class="fas fa-user-tie"></i> Recibió: {{ rep.nombre_colaborador_recibio }}
+            </span>
+            <span class="rep-tiempo" *ngIf="rep.estado === 'pendiente'" [class.rep-tiempo-alerta]="rep.horas_habiles > 48">
+              <i class="fas fa-business-time"></i> {{ rep.tiempo_habil_texto }}
+              <span *ngIf="rep.horas_habiles > 48" class="badge-excede">Excede 48h hábiles</span>
+            </span>
+          </div>
+          <div class="rep-acciones">
+            <span class="badge-estado" [class]="getEstadoClase(rep.estado)">
+              {{ getEstadoTexto(rep.estado) }}
+            </span>
+            <button
+              class="btn-eliminar-lista"
+              *ngIf="rep.estado === 'pendiente'"
+              (click)="eliminarReporte(rep); $event.stopPropagation()"
+              title="Eliminar reporte"
+            >
+              <i class="fas fa-trash-alt"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="empty-state" *ngIf="!cargando && reportes.length === 0">
+        <i class="fas fa-receipt"></i>
+        <p>No hay reportes de pago registrados</p>
+        <button class="btn-agregar-empty" (click)="mostrarFormulario()">
+          <i class="fas fa-plus"></i> Reportar primer pago
+        </button>
+      </div>
+    </div>
+
+    <!-- ================================ -->
+    <!-- VISTA: FORMULARIO NUEVO REPORTE  -->
+    <!-- ================================ -->
+    <div *ngIf="vistaActual === 'formulario'" class="fade-in">
+      <div class="vista-header">
+        <button class="btn-volver" (click)="volverAReportes()">
+          <i class="fas fa-arrow-left"></i> Volver
+        </button>
+        <div class="vista-titulo">
+          <span class="est-nombre-header">Nuevo reporte de pago</span>
+          <span class="est-subtitulo-header">Para: {{ estudianteSeleccionado?.primer_nombre }} {{ estudianteSeleccionado?.primer_apellido }}</span>
+        </div>
+      </div>
+
+      <div class="formulario-card">
+        <!-- Datos del pago -->
+        <div class="form-section">
+          <h6 class="section-label"><i class="fas fa-money-bill-wave"></i> Datos del pago</h6>
+          <div class="row">
+            <div class="col-sm-12 col-md-6">
+              <label class="form-label">Fecha del pago <span class="req">*</span></label>
+              <input
+                class="form-control form-control-lg"
+                type="date"
+                [(ngModel)]="model.fechaPago"
+                [ngClass]="{'is-invalid': !model.fechaPago && submitted}"
+              />
+            </div>
+            <div class="col-sm-12 col-md-6">
+              <label class="form-label">Valor pagado <span class="req">*</span></label>
+              <div class="input-group input-group-lg">
+                <span class="input-group-text">$</span>
+                <input
+                  class="form-control form-control-lg"
+                  type="text"
+                  [value]="model.valor"
+                  (input)="onInputValor($event)"
+                  placeholder="0"
+                  [ngClass]="{'is-invalid': !model.valor && submitted}"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Medio de pago con badges -->
+        <div class="form-section">
+          <h6 class="section-label"><i class="fas fa-credit-card"></i> Medio de pago <span class="req">*</span></h6>
+          <div class="badges-grid" [ngClass]="{'is-invalid-badges': !model.idTipoPago && submitted}">
+            <div
+              class="badge-selector"
+              *ngFor="let tp of tiposPago"
+              [class.selected]="model.idTipoPago == tp.id"
+              (click)="model.idTipoPago = tp.id"
+            >
+              <i class="fas" [ngClass]="getIconoTipoPago(tp.nombre)"></i>
+              <span>{{ tp.nombre }}</span>
+            </div>
+          </div>
+          <small class="text-danger" *ngIf="!model.idTipoPago && submitted">Seleccione un medio de pago</small>
+        </div>
+
+        <!-- Colaborador que recibió con fotos -->
+        <div class="form-section">
+          <h6 class="section-label"><i class="fas fa-user-tie"></i> ¿Quién recibió el pago? <span class="req">*</span></h6>
+          <div class="colaboradores-grid" [ngClass]="{'is-invalid-badges': !model.idColaboradorRecibio && submitted}">
+            <div
+              class="colaborador-selector"
+              *ngFor="let col of colaboradores"
+              [class.selected]="model.idColaboradorRecibio == col.id"
+              (click)="model.idColaboradorRecibio = col.id"
+            >
+              <div class="col-foto" (click)="ampliarFoto(col, $event)">
+                <img
+                  *ngIf="col.foto"
+                  [src]="obtenerUrlFoto(col.foto)"
+                  alt=""
+                  onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'"
+                />
+                <div class="col-iniciales" [style.display]="col.foto ? 'none' : 'flex'">
+                  {{ col.primer_nombre?.charAt(0) }}{{ col.primer_apellido?.charAt(0) }}
+                </div>
+              </div>
+              <span class="col-nombre">{{ col.primer_nombre }} {{ col.primer_apellido }}</span>
+              <span class="col-cargo" *ngIf="col.nombre_cargo">{{ col.nombre_cargo }}</span>
+            </div>
+          </div>
+          <small class="text-danger" *ngIf="!model.idColaboradorRecibio && submitted">Seleccione quién recibió el pago</small>
+        </div>
+
+        <!-- Observaciones -->
+        <div class="form-section">
+          <h6 class="section-label"><i class="fas fa-comment-alt"></i> Observaciones</h6>
+          <textarea class="form-control" rows="2" [(ngModel)]="model.observaciones"
+            placeholder="Notas adicionales (opcional)"></textarea>
+        </div>
+
+        <!-- Botones guardar -->
+        <div class="form-actions" *ngIf="!guardado">
+          <button class="btn-guardar" (click)="guardar()">
+            <i class="fas fa-paper-plane"></i> Reportar Pago
+          </button>
+          <button class="btn-cancelar" (click)="volverAReportes()">
+            <i class="fas fa-times"></i> Cancelar
+          </button>
+        </div>
+
+        <!-- Documento opcional (aparece después de guardar) -->
+        <div *ngIf="guardado && idReporteCreado > 0" class="form-section mt-3">
+          <div class="guardado-exito">
+            <i class="fas fa-check-circle"></i> Pago reportado correctamente
+          </div>
+
+          <h6 class="section-label mt-3"><i class="fas fa-file-alt"></i> Comprobante (opcional)</h6>
+          <p class="text-muted" style="font-size: 13px;">Si tiene el comprobante de pago, puede adjuntarlo aquí.</p>
+          <app-documentos-persona
+            [idPersona]="idPersonaActual"
+            [tipoPersona]="'acudiente'"
+            [nombrePersona]="'Comprobante de pago'"
+            [soloLectura]="false"
+            [filtroCodigosTipoDocumento]="['comprobante_pago']"
+            [modoSoloSubir]="true"
+            (documentoSubido)="onDocumentoSubido($event)"
+          ></app-documentos-persona>
+
+          <div class="form-actions mt-3">
+            <button class="btn-guardar" (click)="volverAReportes()">
+              <i class="fas fa-check"></i> Finalizar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================================ -->
+    <!-- VISTA: DETALLE DEL REPORTE       -->
+    <!-- ================================ -->
+    <div *ngIf="vistaActual === 'detalle' && reporteSeleccionado" class="fade-in">
+      <div class="vista-header">
+        <button class="btn-volver" (click)="volverAReportes()">
+          <i class="fas fa-arrow-left"></i> Volver
+        </button>
+        <div class="vista-titulo">
+          <span class="est-nombre-header">Detalle del reporte</span>
+          <span class="est-subtitulo-header">{{ formatearMoneda(reporteSeleccionado.valor) }}</span>
+        </div>
+      </div>
+
+      <div class="detalle-card">
+        <div class="detalle-estado-banner" [class]="getEstadoClase(reporteSeleccionado.estado)">
+          <i class="fas" [class.fa-check-circle]="reporteSeleccionado.estado === 'asociado'" [class.fa-clock]="reporteSeleccionado.estado === 'pendiente'"></i>
+          <span *ngIf="reporteSeleccionado.estado === 'asociado'">
+            Pago registrado en la plataforma el {{ reporteSeleccionado.fecha_asociacion | date:'dd/MM/yyyy HH:mm' }}
+          </span>
+          <span *ngIf="reporteSeleccionado.estado === 'pendiente'">
+            Pendiente de registro en la plataforma
+          </span>
+        </div>
+
+        <h6 class="section-label mt-3"><i class="fas fa-info-circle"></i> Información del pago</h6>
+
+        <div class="info-row">
+          <span class="info-label">Valor reportado</span>
+          <span class="info-value">{{ formatearMoneda(reporteSeleccionado.valor) }}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Fecha del pago</span>
+          <span class="info-value">{{ reporteSeleccionado.fecha_pago | date:'dd/MM/yyyy' }}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Medio de pago</span>
+          <span class="info-value">{{ reporteSeleccionado.nombre_tipo_pago }}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Recibió</span>
+          <span class="info-value">{{ reporteSeleccionado.nombre_colaborador_recibio }}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Reportado por</span>
+          <span class="info-value">{{ reporteSeleccionado.nombre_persona_reporta }}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Fecha del reporte</span>
+          <span class="info-value">{{ reporteSeleccionado.fecha_registro | date:'dd/MM/yyyy HH:mm' }}</span>
+        </div>
+        <div class="info-row" *ngIf="reporteSeleccionado.estado === 'pendiente'">
+          <span class="info-label">Tiempo hábil transcurrido</span>
+          <span class="info-value" [class.text-danger]="reporteSeleccionado.horas_habiles > 48">
+            {{ reporteSeleccionado.tiempo_habil_texto }}
+            <span *ngIf="reporteSeleccionado.horas_habiles > 48" class="badge-excede ms-2">Excede 48h</span>
+          </span>
+        </div>
+        <div class="info-row" *ngIf="reporteSeleccionado.observaciones">
+          <span class="info-label">Observaciones</span>
+          <span class="info-value">{{ reporteSeleccionado.observaciones }}</span>
+        </div>
+
+        <!-- Comprobante adjunto -->
+        <div class="form-section mt-3" *ngIf="reporteSeleccionado.comprobante_ruta">
+          <h6 class="section-label"><i class="fas fa-file-alt"></i> Comprobante adjunto</h6>
+          <div class="comprobante-preview">
+            <div class="comprobante-file">
+              <i class="fas fa-file-image comprobante-icon" *ngIf="esImagen(reporteSeleccionado.comprobante_nombre)"></i>
+              <i class="fas fa-file-pdf comprobante-icon" *ngIf="esPdf(reporteSeleccionado.comprobante_nombre)"></i>
+              <i class="fas fa-file comprobante-icon" *ngIf="!esImagen(reporteSeleccionado.comprobante_nombre) && !esPdf(reporteSeleccionado.comprobante_nombre)"></i>
+              <div class="comprobante-info">
+                <span class="comprobante-nombre">{{ reporteSeleccionado.comprobante_nombre }}</span>
+              </div>
+              <a [href]="obtenerUrlComprobante(reporteSeleccionado.comprobante_ruta)" target="_blank" class="btn-ver-comprobante">
+                <i class="fas fa-eye"></i> Ver
+              </a>
+            </div>
+            <!-- Preview de imagen -->
+            <img
+              *ngIf="esImagen(reporteSeleccionado.comprobante_nombre)"
+              [src]="obtenerUrlComprobante(reporteSeleccionado.comprobante_ruta)"
+              class="comprobante-img-preview"
+              alt="Comprobante"
+            />
+          </div>
+        </div>
+        <div class="form-section mt-3" *ngIf="!reporteSeleccionado.comprobante_ruta">
+          <h6 class="section-label"><i class="fas fa-file-alt"></i> Comprobante</h6>
+          <p class="text-muted" style="font-size: 13px;">No se adjuntó comprobante a este reporte.</p>
+        </div>
+
+        <div class="detalle-acciones mt-3" *ngIf="reporteSeleccionado.estado === 'pendiente'">
+          <button class="btn-eliminar" (click)="eliminarReporte(reporteSeleccionado)">
+            <i class="fas fa-trash"></i> Eliminar reporte
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Modal foto ampliada -->
+  <div class="foto-modal-overlay" *ngIf="fotoAmpliada" (click)="cerrarFoto()">
+    <div class="foto-modal" (click)="$event.stopPropagation()">
+      <button class="foto-modal-cerrar" (click)="cerrarFoto()">
+        <i class="fas fa-times"></i>
+      </button>
+      <img [src]="fotoAmpliada.url" alt="" />
+      <div class="foto-modal-nombre">{{ fotoAmpliada.nombre }}</div>
+      <div class="foto-modal-cargo" *ngIf="fotoAmpliada.cargo">{{ fotoAmpliada.cargo }}</div>
+    </div>
+  </div>
+</div>

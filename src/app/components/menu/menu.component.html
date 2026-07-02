@@ -1,0 +1,137 @@
+<div class="menu-container">
+  
+  <!-- Fondo con imagen difuminada (dinámico por tenant con fallback) -->
+  <div class="background-image" [style.background-image]="'url(' + fondoUrl + ')'"></div>
+  <div class="background-overlay"></div>
+
+  <!-- Header con 3 secciones -->
+  <header class="menu-header">
+    <div class="header-content">
+      
+      <!-- Logos (izquierda) -->
+      <div class="header-logos">
+        <img [src]="logoGenialisis" alt="Genialisis" class="genialisis-logo" />
+        <div class="logo-divider"></div>
+        <img [src]="logoBasicoUrl" [alt]="nombreInstitucion" class="institution-logo" />
+      </div>
+
+      <!-- Nombre institución (centro) -->
+      <div class="header-title">
+        <h1>{{ nombreInstitucion }}</h1>
+        <p>Portal de Padres de Familia</p>
+      </div>
+
+      <!-- Usuario y botón salir (derecha) -->
+      <div class="header-user">
+        <span class="user-greeting" *ngIf="nombreUsuario">Hola, {{ nombreUsuario }}</span>
+        <button class="profile-button" (click)="irAMiPerfil()">
+          <img src="/assets/images/perfil.png" alt="Mi Perfil" />
+          <span>Mi Perfil</span>
+        </button>
+        <button class="help-button" (click)="abrirAyuda()">
+          <span>?</span>
+        </button>
+        <button class="logout-button" (click)="salir()">
+          <img src="/assets/images/salir.png" alt="Salir" />
+          <span>Salir</span>
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- ====== BANNER DE CUMPLEAÑOS ====== -->
+  <div class="birthday-banner-wrapper" *ngIf="mostrarBannerCumple">
+    
+    <!-- Confetti animado -->
+    <div class="confetti-container">
+      <div 
+        *ngFor="let piece of confettiPieces" 
+        class="confetti-piece"
+        [style.left.%]="piece * 2"
+        [style.animation-delay.s]="piece * 0.08"
+        [style.animation-duration.s]="2.5 + (piece % 5) * 0.5"
+      ></div>
+    </div>
+
+    <div class="birthday-banner">
+      
+      <!-- Botón cerrar -->
+      <button class="birthday-close" (click)="cerrarBannerCumple()">✕</button>
+
+      <div class="birthday-content">
+        
+        <!-- Imagen de cumpleaños -->
+        <div class="birthday-image-container">
+          <img src="/assets/images/cumpleanos.png" alt="Feliz Cumpleaños" class="birthday-image" />
+        </div>
+        
+        <!-- Mensaje -->
+        <div class="birthday-text">
+          <h2 class="birthday-title">¡Feliz Cumpleaños!</h2>
+          <p class="birthday-message">{{ mensajeCumple }}</p>
+          <p class="birthday-from">Con cariño, {{ nombreInstitucion }} 💛</p>
+        </div>
+
+      </div>
+    </div>
+  </div>
+  <!-- ====== FIN BANNER DE CUMPLEAÑOS ====== -->
+
+  <!-- Grid de círculos - 6 OPCIONES -->
+  <main class="menu-circles">
+
+    <!-- Estudiantes -->
+    <div class="circle-option circle-1" (click)="selectOption('/estudiantes')">
+      <div class="circle-content">
+        <img src="/assets/images/estudiantes.png" alt="Estudiantes" />
+        <span>Estudiantes</span>
+      </div>
+    </div>
+
+    <!-- Mi Cuenta -->
+    <div class="circle-option circle-2" (click)="selectOption('/mi-cuenta')">
+      <div class="circle-content">
+        <img src="/assets/images/mi-cuenta.png" alt="Mi Cuenta" />
+        <span>Mi Cuenta</span>
+      </div>
+    </div>
+
+    <!-- Galería -->
+    <div class="circle-option circle-3" (click)="selectOption('/galeria')">
+      <div class="circle-content">
+        <img src="/assets/images/galeria.png" alt="Galería" />
+        <span>Galería</span>
+      </div>
+    </div>
+
+    <!-- Reportar Pago -->
+    <div class="circle-option circle-4" (click)="selectOption('/reportes-pago')">
+      <div class="circle-content">
+        <img src="/assets/images/reportar-pago.png" alt="Reportar Pago" />
+        <span>Reportar Pago</span>
+      </div>
+    </div>
+
+    <!-- Info para todos -->
+    <div class="circle-option circle-5" (click)="selectOption('/info-padres')">
+      <div class="circle-content">
+        <img src="/assets/images/info-padres.png" alt="Info para todos" />
+        <span>Info para todos</span>
+      </div>
+    </div>
+
+    <!-- Autorizados para recoger -->
+    <div class="circle-option circle-6" (click)="selectOption('/autorizados-recoger')">
+      <div class="circle-content">
+        <img src="/assets/images/autorizados.png" alt="Autorizados" />
+        <span>Autorizados</span>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Mensaje Diario -->
+  <app-daily-message></app-daily-message>
+
+</div>

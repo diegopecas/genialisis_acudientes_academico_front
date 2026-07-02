@@ -1,0 +1,50 @@
+.form-buscar-texto {
+    padding: 10px;
+    box-sizing: border-box;
+    box-shadow: 0 0.125em 0.3125em rgba(0, 0, 0, 0.3);
+    display: flex;
+    // position: absolute;
+    border-radius: 5px;
+    background-color: #e4e1e17c;
+    font-weight: 500;
+    // margin-top: 20px;
+    // margin-bottom: 20px;
+    // margin-left: 20px;
+    font-family: 'Material Design Icons', sans-serif;
+    width: 100%;
+}
+
+.input-buscar-texto {
+    color: #ff7b73;
+    background-color: #e4e1e17c;
+    // font-family: 'Tektur', sans-serif;
+    font-family: 'Material Design Icons', sans-serif;
+    font-size: 20px;
+    font-weight: 500;
+    border: 0;
+    outline: 0;
+    // padding: 10px;
+    width: inherit;
+    cursor: text;
+}
+
+.label-buscar-texto {
+    font-size: 20px;
+    font-weight: 500;
+}
+/*
+.button-buscar-texto {
+    color: #ffffff;
+    padding-left: 20px;
+    padding-right: 20px;
+    padding-top: 10px;
+    padding-bottom: 10px;
+    width: auto;
+    background-color: #ff7b73;
+    font: inherit;
+    border: 0;
+    outline: 0;
+    border-radius: 5em;
+    font-family: 'Material Design Icons', sans-serif;
+    cursor: pointer;
+}*/

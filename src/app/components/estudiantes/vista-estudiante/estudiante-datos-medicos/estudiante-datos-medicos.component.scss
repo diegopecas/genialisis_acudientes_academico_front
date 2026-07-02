@@ -1,0 +1,182 @@
+$gold: #FFC107;
+$gold-dark: #f0b429;
+$gold-text: #8B6914;
+$black: #222;
+$ivory: #FAF8F3;
+$light-gold: rgba(255, 193, 7, 0.1);
+
+.edicion-actions {
+  display: flex;
+  justify-content: flex-start;
+  padding: 0 0.5rem;
+}
+
+.btn-editar {
+  padding: 10px 24px;
+  background: linear-gradient(135deg, $gold-dark 0%, $gold 100%);
+  color: $black;
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba($gold, 0.3);
+  &:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba($gold, 0.4); }
+}
+
+// ==================== MODO CONSULTA ====================
+
+.grupo-datos {
+  background: #fafafa;
+  border-radius: 10px;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1rem;
+  border-left: 3px solid $gold;
+}
+
+.grupo-titulo {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: $black;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #eee;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.grupo-icono {
+  font-size: 1.1rem;
+}
+
+.dato-item {
+  display: flex;
+  flex-direction: column;
+  padding: 0.5rem 0.75rem;
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #f0f0f0;
+  height: 100%;
+}
+
+.dato-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  margin-bottom: 2px;
+}
+
+.dato-valor {
+  font-size: 0.92rem;
+  font-weight: 500;
+  color: $black;
+}
+
+.dato-observacion {
+  font-size: 0.78rem;
+  color: #999;
+  font-style: italic;
+  margin-top: 2px;
+}
+
+// ==================== MODO EDICIÓN ====================
+
+.edicion-container {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  margin-bottom: 2rem;
+}
+
+.edicion-header {
+  background: linear-gradient(135deg, #1A1A1A 0%, #2d2d2d 100%);
+  color: $ivory;
+  padding: 16px 24px;
+  font-size: 16px;
+  font-weight: 700;
+  border-bottom: 3px solid $gold;
+  i { color: $gold; }
+}
+
+.edicion-body {
+  padding: 24px;
+}
+
+.edicion-seccion {
+  margin-bottom: 28px;
+  .seccion-titulo {
+    font-size: 14px;
+    font-weight: 700;
+    color: $gold-text;
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid $light-gold;
+  }
+}
+
+.observacion-input {
+  font-size: 0.82rem;
+  padding: 4px 8px;
+  background-color: #fafafa;
+  border: 1px dashed #ddd;
+  color: #777;
+  &:focus {
+    background-color: white;
+    border-style: solid;
+    border-color: $gold;
+    color: $black;
+  }
+  &::placeholder {
+    color: #bbb;
+    font-style: italic;
+  }
+}
+
+.edicion-acciones {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid #eee;
+}
+
+.btn-save {
+  padding: 12px 28px;
+  background: linear-gradient(135deg, $gold-dark 0%, $gold 100%);
+  color: $black;
+  border: none;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 14px rgba($gold, 0.3);
+  &:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 24px rgba($gold, 0.45); }
+  &:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+}
+
+.btn-cancel {
+  padding: 12px 28px;
+  background: #f5f5f5;
+  color: $black;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  &:hover:not(:disabled) { background: #eee; }
+  &:disabled { opacity: 0.5; cursor: not-allowed; }
+}
+
+@media (max-width: 576px) {
+  .edicion-body { padding: 16px; }
+  .edicion-acciones { flex-direction: column; }
+  .btn-save, .btn-cancel { width: 100%; text-align: center; }
+  .btn-editar { width: 100%; text-align: center; }
+}

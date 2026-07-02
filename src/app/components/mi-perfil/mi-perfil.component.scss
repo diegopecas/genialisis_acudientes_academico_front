@@ -1,0 +1,374 @@
+/* Contenedor de foto - Posición superior derecha */
+.foto-container {
+  position: fixed;
+  top: 100px;
+  right: 20px;
+  z-index: 100;
+  background: white;
+  border-radius: 12px;
+  padding: 0.5rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Responsive para móviles */
+@media (max-width: 768px) {
+  .foto-container {
+    position: relative;
+    top: auto;
+    right: auto;
+    margin: 1rem auto;
+    width: fit-content;
+    display: block;
+  }
+}
+
+// Variables de colores
+$gold: #d4af37;
+$black: #222;
+$light-gold: rgba(212, 175, 55, 0.1);
+
+.modulo {
+  background: #f5f7fa;
+  min-height: 100vh;
+  padding-bottom: 2rem;
+}
+
+// Estilos personalizados para los tabs
+.custom-tabs {
+  border-bottom: 1px solid $gold;
+  flex-wrap: nowrap;
+  display: flex;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+
+  .custom-tab-item {
+    .custom-tab-link {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 20px;
+      color: $black;
+      font-weight: 500;
+      margin-right: 3px;
+      border: 1px solid transparent;
+      border-radius: 6px 6px 0 0;
+      white-space: nowrap;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.3s ease;
+
+      i {
+        color: $gold;
+        font-size: 1.1rem;
+      }
+
+      &:hover:not(.active) {
+        border-color: rgba($gold, 0.3);
+        background-color: $light-gold;
+      }
+
+      &.active {
+        color: $black;
+        border-color: $gold $gold #fff;
+        background-color: #fff;
+        font-weight: 600;
+
+        &:hover {
+          border-color: $gold $gold #fff;
+        }
+      }
+    }
+  }
+}
+
+// Estilos para botones
+.btn-save {
+  background-color: #f0b429;
+  color: $black;
+  border: none;
+  border-radius: 6px;
+  padding: 10px 20px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+
+  i {
+    font-size: 1rem;
+  }
+
+  &:hover:not(:disabled) {
+    background-color: darken(#f0b429, 8%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(#f0b429, 0.3);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+.btn-cancel {
+  background-color: #6c757d;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 10px 20px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+
+  i {
+    font-size: 1rem;
+  }
+
+  &:hover {
+    background-color: darken(#6c757d, 8%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(#6c757d, 0.3);
+  }
+}
+
+.form-label {
+  font-weight: 500;
+  color: #495057;
+
+  .text-danger {
+    font-size: 1.2em;
+  }
+}
+
+.form-control,
+.form-select {
+  border-radius: 8px;
+  border: 1px solid #dee2e6;
+
+  &:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+  }
+
+  &:disabled {
+    background-color: #f8f9fa;
+    cursor: not-allowed;
+  }
+}
+
+.gap-2 {
+  gap: 0.5rem !important;
+}
+
+// ============================================
+// ESTILOS DEL TAB CAMBIAR CONTRASEÑA
+// ============================================
+.cambiar-clave-container {
+  max-width: 600px;
+  margin: 0 auto;
+
+  @media (max-width: 768px) {
+    padding: 0;
+  }
+}
+
+.usuario-info-clave {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+
+  .avatar-clave {
+    width: 56px;
+    height: 56px;
+    background: linear-gradient(45deg, #f0b429, #fbe417);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+
+    i {
+      font-size: 22px;
+      color: white;
+    }
+  }
+
+  .info-clave {
+    flex: 1;
+
+    h3 {
+      margin: 0 0 4px 0;
+      color: $black;
+      font-size: 1.2rem;
+      font-weight: 600;
+    }
+
+    p {
+      margin: 0;
+      color: #666;
+      font-size: 0.9rem;
+    }
+  }
+
+  @media (max-width: 480px) {
+    flex-direction: column;
+    text-align: center;
+    gap: 12px;
+  }
+}
+
+.cambiar-clave-form {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+
+  @media (max-width: 480px) {
+    padding: 20px;
+  }
+}
+
+.form-group-clave {
+  margin-bottom: 20px;
+
+  .password-input-container {
+    position: relative;
+
+    .toggle-password {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 4px;
+      border-radius: 4px;
+      color: #9e9e9e;
+      transition: all 0.3s ease;
+
+      &:hover:not(:disabled) {
+        background-color: rgba(0, 0, 0, 0.05);
+        color: #616161;
+      }
+
+      &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+    }
+  }
+}
+
+.error-message-clave {
+  color: #dc3545;
+  font-size: 0.85rem;
+  margin-top: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+
+  &::before {
+    content: '\26A0';
+    font-size: 14px;
+  }
+}
+
+.password-strength {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  .strength-bar {
+    flex: 1;
+    height: 6px;
+    background: #e9ecef;
+    border-radius: 3px;
+    overflow: hidden;
+
+    .strength-fill {
+      height: 100%;
+      transition: width 0.3s ease;
+      border-radius: 3px;
+
+      &.debil { background: #dc3545; }
+      &.media { background: #ffc107; }
+      &.fuerte { background: #28a745; }
+    }
+  }
+
+  .strength-text {
+    font-size: 0.85rem;
+    font-weight: 600;
+    min-width: 60px;
+
+    &.debil { color: #dc3545; }
+    &.media { color: #ffc107; }
+    &.fuerte { color: #28a745; }
+  }
+}
+
+.security-tips {
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 10px;
+  padding: 16px;
+  margin-bottom: 20px;
+
+  h4 {
+    margin: 0 0 12px 0;
+    color: $black;
+    font-size: 0.95rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    i { color: $gold; }
+  }
+
+  ul {
+    margin: 0;
+    padding-left: 20px;
+    list-style: none;
+
+    li {
+      margin-bottom: 6px;
+      color: #666;
+      font-size: 0.9rem;
+      position: relative;
+      transition: color 0.3s ease;
+
+      &::before {
+        content: '\25CB';
+        position: absolute;
+        left: -20px;
+        color: #adb5bd;
+        transition: all 0.3s ease;
+      }
+
+      &.completed {
+        color: #28a745;
+
+        &::before {
+          content: '\2713';
+          color: #28a745;
+          font-weight: bold;
+        }
+      }
+    }
+  }
+}

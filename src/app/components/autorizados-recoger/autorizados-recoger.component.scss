@@ -1,0 +1,795 @@
+// ============================================
+// VARIABLES (misma paleta del portal de padres)
+// ============================================
+$gold-primary: #FFC107;
+$gold-hover: #FFD54F;
+$gold-text-dark: #8B6914;
+$gold-text-medium: #A67C00;
+$black-primary: #1A1A1A;
+$ivory: #FAF8F3;
+$white: #FFFFFF;
+
+$pastel-pink: #FFB3D9;
+$pastel-peach: #FFCBA4;
+$pastel-mint: #B5EAD7;
+$pastel-lavender: #C3B1E1;
+
+$shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
+$shadow-md: 0 4px 16px rgba(0, 0, 0, 0.12);
+$shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.16);
+$transition-base: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+$border-radius: 12px;
+
+// ============================================
+// ANIMACIONES
+// ============================================
+.fade-in {
+  animation: fadeIn 0.35s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+// ============================================
+// SUBTITULO
+// ============================================
+.subtitulo {
+  color: #757575;
+  font-size: 15px;
+  margin-bottom: 24px;
+  text-align: center;
+}
+
+// ============================================
+// LOADING
+// ============================================
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 48px;
+  color: #9e9e9e;
+
+  .spinner {
+    width: 36px;
+    height: 36px;
+    border: 3px solid #e0e0e0;
+    border-top-color: $gold-primary;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+// ============================================
+// EMPTY STATE
+// ============================================
+.empty-state {
+  text-align: center;
+  padding: 48px 24px;
+  color: #bdbdbd;
+
+  i {
+    font-size: 3rem;
+    margin-bottom: 16px;
+    display: block;
+  }
+
+  p {
+    font-size: 15px;
+    margin-bottom: 16px;
+  }
+}
+
+// ============================================
+// VISTA HEADER (volver + titulo + acción)
+// ============================================
+.vista-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  max-width: 700px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.btn-volver {
+  background: $white;
+  border: 1px solid #e0e0e0;
+  border-radius: $border-radius;
+  padding: 10px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #616161;
+  cursor: pointer;
+  transition: $transition-base;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  &:hover {
+    background: #f5f5f5;
+    border-color: #bdbdbd;
+  }
+}
+
+.vista-titulo {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+
+  .est-nombre-header {
+    font-size: 20px;
+    font-weight: 700;
+    color: $black-primary;
+  }
+
+  .est-subtitulo-header {
+    font-size: 13px;
+    color: #9e9e9e;
+  }
+}
+
+.btn-agregar {
+  background: linear-gradient(135deg, $gold-primary 0%, $gold-hover 100%);
+  border: none;
+  border-radius: $border-radius;
+  padding: 10px 24px;
+  font-size: 14px;
+  font-weight: 600;
+  color: $black-primary;
+  cursor: pointer;
+  transition: $transition-base;
+  box-shadow: $shadow-sm;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(255, 193, 7, 0.4);
+  }
+}
+
+.btn-agregar-empty {
+  @extend .btn-agregar;
+  margin: 0 auto;
+}
+
+// ============================================
+// ESTUDIANTES GRID
+// ============================================
+.estudiantes-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 10px;
+  max-width: 700px;
+  margin: 0 auto;
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.estudiante-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: $white;
+  border-radius: 10px;
+  box-shadow: $shadow-sm;
+  cursor: pointer;
+  transition: $transition-base;
+  border-left: 4px solid $pastel-mint;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: $shadow-md;
+    border-left-color: $gold-primary;
+  }
+
+  .est-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, $gold-primary, $gold-hover);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 14px;
+    color: $white;
+    flex-shrink: 0;
+  }
+
+  .est-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+
+    .est-nombre {
+      font-weight: 600;
+      font-size: 15px;
+      color: $black-primary;
+    }
+
+    .est-grupo {
+      font-size: 13px;
+      color: #9e9e9e;
+    }
+  }
+
+  .est-arrow {
+    color: #bdbdbd;
+    font-size: 14px;
+  }
+}
+
+// ============================================
+// AUTORIZADOS LISTA
+// ============================================
+.autorizados-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+.autorizado-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  background: $white;
+  border-radius: 10px;
+  box-shadow: $shadow-sm;
+  transition: $transition-base;
+  border-left: 4px solid $pastel-mint;
+
+  &:hover {
+    box-shadow: $shadow-md;
+  }
+
+  &.inactivo {
+    opacity: 0.55;
+    border-left-color: #e0e0e0;
+  }
+
+  .aut-foto-container {
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  .aut-foto {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid $pastel-mint;
+    transition: $transition-base;
+
+    &:hover {
+      transform: scale(1.08);
+      box-shadow: $shadow-md;
+    }
+  }
+
+  .aut-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    cursor: pointer;
+    min-width: 0;
+
+    .aut-nombre {
+      font-weight: 600;
+      font-size: 14px;
+      color: $black-primary;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .aut-documento {
+      font-size: 12px;
+      color: #757575;
+
+      i { margin-right: 4px; color: #9e9e9e; }
+    }
+  }
+
+  .aut-badges {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .aut-acciones {
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+}
+
+// ============================================
+// BADGES
+// ============================================
+.badge-tipo {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+
+  &.permanente {
+    background: #e8f5e9;
+    color: #2e7d32;
+  }
+
+  &.temporal {
+    background: #fff3e0;
+    color: #e65100;
+  }
+
+  &.acudiente {
+    background: #e3f2fd;
+    color: #1565c0;
+  }
+}
+
+.section-label-lista {
+  font-size: 12px;
+  font-weight: 700;
+  color: #9e9e9e;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 12px 0 8px 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+
+  i { color: #bdbdbd; }
+
+  &:first-child {
+    margin-top: 0;
+  }
+}
+
+.acudiente-card {
+  border-left-color: $pastel-lavender !important;
+  cursor: default;
+
+  &:hover {
+    transform: none;
+    box-shadow: $shadow-sm;
+  }
+}
+
+.badge-estado {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 20px;
+
+  &.activo {
+    background: #e3f2fd;
+    color: #1565c0;
+  }
+
+  &.inactivo {
+    background: #fce4ec;
+    color: #c62828;
+  }
+}
+
+.badge-encontrado {
+  font-size: 14px;
+  font-weight: 600;
+  color: #2e7d32;
+  padding: 10px 0;
+
+  i { margin-right: 6px; }
+}
+
+// ============================================
+// BOTONES ICONO
+// ============================================
+.btn-icon {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 50%;
+  transition: $transition-base;
+  font-size: 22px;
+
+  &:hover {
+    background: #f5f5f5;
+  }
+
+  .toggle-on { color: #4caf50; }
+  .toggle-off { color: #bdbdbd; }
+}
+
+// ============================================
+// FORMULARIO
+// ============================================
+.formulario-card {
+  background: $white;
+  border-radius: $border-radius;
+  box-shadow: $shadow-sm;
+  padding: 24px;
+  max-width: 700px;
+  margin: 0 auto;
+
+  @media (max-width: 768px) {
+    padding: 20px;
+  }
+}
+
+.form-section {
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #f0f0f0;
+
+  &:last-of-type {
+    border-bottom: none;
+    margin-bottom: 0;
+  }
+
+  &.disabled-section {
+    opacity: 0.45;
+    pointer-events: none;
+  }
+}
+
+.section-label {
+  font-size: 14px;
+  font-weight: 700;
+  color: $gold-text-dark;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  i { color: $gold-primary; }
+}
+
+.form-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #616161;
+  margin-bottom: 4px;
+}
+
+.req {
+  color: #ef5350;
+}
+
+.form-control, .form-select {
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+  transition: $transition-base;
+
+  &:focus {
+    border-color: $gold-primary;
+    box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.15);
+  }
+}
+
+.btn-verificar {
+  background: linear-gradient(135deg, $gold-primary 0%, $gold-hover 100%);
+  border: none;
+  border-radius: 8px;
+  padding: 10px 24px;
+  font-size: 14px;
+  font-weight: 600;
+  color: $black-primary;
+  cursor: pointer;
+  transition: $transition-base;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(255, 193, 7, 0.35);
+  }
+}
+
+.form-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.btn-guardar {
+  background: linear-gradient(135deg, #4caf50 0%, #66bb6a 100%);
+  border: none;
+  border-radius: 8px;
+  padding: 12px 32px;
+  font-size: 15px;
+  font-weight: 600;
+  color: $white;
+  cursor: pointer;
+  transition: $transition-base;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.35);
+  }
+}
+
+.btn-cancelar {
+  background: $white;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 12px 32px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #757575;
+  cursor: pointer;
+  transition: $transition-base;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  &:hover {
+    background: #f5f5f5;
+  }
+}
+
+// ============================================
+// TABS (mismo estilo que crear-acudiente)
+// ============================================
+.custom-tabs {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  gap: 4px;
+  border-bottom: 2px solid #f0f0f0;
+  overflow-x: auto;
+}
+
+.custom-tab-item {
+  flex-shrink: 0;
+}
+
+.custom-tab-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #9e9e9e;
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  transition: $transition-base;
+  white-space: nowrap;
+
+  &:hover {
+    color: $gold-text-dark;
+  }
+
+  &.active {
+    color: $gold-text-dark;
+    border-bottom-color: $gold-primary;
+  }
+}
+
+// ============================================
+// DETALLE GRID (info + foto lado a lado)
+// ============================================
+.detalle-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+// ============================================
+// DETALLE CARD
+// ============================================
+.detalle-card {
+  background: $white;
+  border-radius: $border-radius;
+  box-shadow: $shadow-sm;
+  padding: 28px;
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 0;
+  border-bottom: 1px solid #f5f5f5;
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  .info-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #9e9e9e;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .info-value {
+    font-size: 15px;
+    font-weight: 500;
+    color: $black-primary;
+    text-align: right;
+  }
+
+  @media (max-width: 576px) {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+
+    .info-value { text-align: left; }
+  }
+}
+
+.detalle-acciones {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.btn-autorizar-dia {
+  background: linear-gradient(135deg, #42a5f5 0%, #64b5f6 100%);
+  border: none;
+  border-radius: 8px;
+  padding: 10px 24px;
+  font-size: 14px;
+  font-weight: 600;
+  color: $white;
+  cursor: pointer;
+  transition: $transition-base;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(66, 165, 245, 0.35);
+  }
+}
+
+.btn-toggle-estado {
+  background: $white;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 10px 24px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #757575;
+  cursor: pointer;
+  transition: $transition-base;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  &:hover {
+    background: #f5f5f5;
+  }
+}
+
+// ============================================
+// HISTORIAL
+// ============================================
+.historial-container {
+  margin-top: 8px;
+}
+
+.historial-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.historial-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 16px 20px;
+  background: $white;
+  border-radius: $border-radius;
+  box-shadow: $shadow-sm;
+  border-left: 4px solid $pastel-lavender;
+
+  .historial-fecha {
+    font-size: 14px;
+    font-weight: 700;
+    color: $gold-text-dark;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    i { color: $gold-primary; }
+  }
+
+  .historial-detalle {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+
+    .historial-autorizo {
+      font-size: 13px;
+      color: #757575;
+    }
+
+    .historial-obs {
+      font-size: 13px;
+      color: #9e9e9e;
+      font-style: italic;
+    }
+  }
+}
+
+// ============================================
+// GUARDADO EXITO
+// ============================================
+.guardado-exito {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 20px;
+  background: #e8f5e9;
+  border-radius: $border-radius;
+  color: #2e7d32;
+  font-weight: 600;
+  font-size: 15px;
+
+  i {
+    font-size: 20px;
+  }
+}
+
+// ============================================
+// EMPTY STATE SMALL
+// ============================================
+.empty-state-sm {
+  text-align: center;
+  padding: 24px 16px;
+  color: #bdbdbd;
+
+  i {
+    font-size: 2rem;
+    margin-bottom: 8px;
+    display: block;
+  }
+
+  p {
+    font-size: 14px;
+    margin: 0;
+  }
+}

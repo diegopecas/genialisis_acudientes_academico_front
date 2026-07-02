@@ -1,0 +1,622 @@
+<div class="modulo-mi-cuenta">
+
+  <div class="background-image"></div>
+  <div class="background-overlay"></div>
+
+  <app-header
+    [tituloModulo]="titulo"
+    [mostrarCrear]="false"
+    [accion]="'MiCuenta'"
+    [raiz]="'/mi-cuenta'"
+    [regresar]="'/menu'"
+    [iconoTitulo]="'/assets/images/mi-cuenta.png'"
+  ></app-header>
+
+  <div class="loading-inicial" *ngIf="cargandoEstudiantes">
+    <div class="spinner-grande"></div>
+    <p>Cargando información...</p>
+  </div>
+
+  <div class="sin-datos" *ngIf="!cargandoEstudiantes && estudiantes.length === 0">
+    <div class="sin-datos-card">
+      <span class="sin-datos-icono">📋</span>
+      <h3>Sin información disponible</h3>
+      <p>No se encontraron estudiantes asociados a tu cuenta. Contacta con la institución.</p>
+    </div>
+  </div>
+
+  <!-- ══ SELECTOR MÚLTIPLES ESTUDIANTES ══ -->
+  <div class="contenido" *ngIf="!cargandoEstudiantes && estudiantes.length > 1 && !estudianteActivo">
+
+    <!-- DDL AÑO GLOBAL (arriba de todo) -->
+    <div class="anio-selector-wrap" *ngIf="aniosDisponibles.length > 0">
+      <span class="anio-label">📅 Año:</span>
+      <select class="anio-select" [(ngModel)]="anioSeleccionado">
+        <option [value]="0">Todos</option>
+        <option *ngFor="let anio of aniosDisponibles" [value]="anio">{{ anio }}</option>
+      </select>
+    </div>
+
+    <div class="banner-global"
+      [class.con-deuda]="totalVencidoGlobal > 0"
+      [class.al-dia]="totalVencidoGlobal === 0">
+      <div class="banner-icono">
+        <span *ngIf="totalVencidoGlobal > 0">⚠️</span>
+        <span *ngIf="totalVencidoGlobal === 0">✅</span>
+      </div>
+      <div class="banner-texto">
+        <ng-container *ngIf="totalVencidoGlobal > 0">
+          <p class="banner-label">Vencido (todos los estudiantes)</p>
+          <p class="banner-monto">{{ formatPeso(totalVencidoGlobal) }}</p>
+        </ng-container>
+        <ng-container *ngIf="totalVencidoGlobal === 0">
+          <p class="banner-estado">✅ Al día</p>
+          <p class="banner-label">No tienes saldos vencidos</p>
+        </ng-container>
+      </div>
+      <div class="banner-desglose" *ngIf="totalPendienteGlobal > 0">
+        <span class="desglose-item pendiente">
+          Pendiente: {{ formatPeso(totalPendienteGlobal) }}
+        </span>
+      </div>
+    </div>
+
+    <h3 class="seccion-titulo">Selecciona un estudiante para ver el detalle</h3>
+    <div class="estudiantes-grid">
+      <div class="estudiante-selector-card" *ngFor="let est of estudiantes"
+        [class.cargando]="est.cargando" (click)="seleccionarEstudiante(est)">
+        <div class="selector-header">
+          <div class="selector-info">
+            <p class="selector-nombre">{{ est.nombre_completo }}</p>
+            <p class="selector-grupo">📚 {{ est.nombre_grupo }}</p>
+          </div>
+          <span class="selector-estado-badge"
+            [class.vencido]="estadoGeneralEstudiante(est) === 'vencido'"
+            [class.pendiente]="estadoGeneralEstudiante(est) === 'pendiente'"
+            [class.aldia]="estadoGeneralEstudiante(est) === 'aldia'">
+            <span *ngIf="estadoGeneralEstudiante(est) === 'vencido'">⚠️ Vencido</span>
+            <span *ngIf="estadoGeneralEstudiante(est) === 'pendiente'">🕐 Pendiente</span>
+            <span *ngIf="estadoGeneralEstudiante(est) === 'aldia'">✅ Al día</span>
+          </span>
+        </div>
+        <div class="selector-montos" *ngIf="!est.cargando">
+          <div class="monto-item" [class.alerta]="saldoVencidoEstudiante(est) > 0">
+            <span class="monto-label">Vencido</span>
+            <span class="monto-valor">{{ formatPeso(saldoVencidoEstudiante(est)) }}</span>
+          </div>
+          <div class="monto-item">
+            <span class="monto-label">Pendiente</span>
+            <span class="monto-valor">{{ formatPeso(saldoPendienteEstudiante(est)) }}</span>
+          </div>
+          <div class="monto-item positivo">
+            <span class="monto-label">Pagado</span>
+            <span class="monto-valor">{{ formatPeso(totalPagadoEstudiante(est)) }}</span>
+          </div>
+        </div>
+        <div class="selector-cargando" *ngIf="est.cargando">
+          <div class="spinner-mini"></div><span>Calculando...</span>
+        </div>
+        <div class="selector-footer"><span>Ver detalle →</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ VISTA DETALLE ══ -->
+  <div class="contenido" *ngIf="!cargandoEstudiantes && estudianteActivo">
+
+    <button class="btn-volver" *ngIf="estudiantes.length > 1" (click)="volver()">
+      ← Volver a mis estudiantes
+    </button>
+
+    <div class="estudiante-activo-header">
+      <h2>{{ estudianteActivo.nombre_completo }}</h2>
+      <span class="grupo-badge">📚 {{ estudianteActivo.nombre_grupo }}</span>
+    </div>
+
+    <!-- DDL AÑO -->
+    <div class="anio-selector-wrap" *ngIf="aniosDisponibles.length > 0">
+      <span class="anio-label">📅 Año:</span>
+      <select class="anio-select" [(ngModel)]="anioSeleccionado">
+        <option [value]="0">Todos</option>
+        <option *ngFor="let anio of aniosDisponibles" [value]="anio">{{ anio }}</option>
+      </select>
+    </div>
+
+    <!-- TABS -->
+    <div class="tabs-container">
+      <button class="tab" [class.activo]="tabActiva === 'resumen'" (click)="cambiarTab('resumen')">
+        <span class="tab-icono">📊</span><span class="tab-texto">Resumen</span>
+      </button>
+      <button class="tab" [class.activo]="tabActiva === 'pagos'" (click)="cambiarTab('pagos')">
+        <span class="tab-icono">💳</span><span class="tab-texto">Pagos</span>
+      </button>
+      <button class="tab" [class.activo]="tabActiva === 'cobros'" (click)="cambiarTab('cobros')">
+        <span class="tab-icono">📄</span><span class="tab-texto">Cobros</span>
+      </button>
+      <button class="tab" [class.activo]="tabActiva === 'movimientos'" (click)="cambiarTab('movimientos')">
+        <span class="tab-icono">🔄</span><span class="tab-texto">Movimientos</span>
+      </button>
+    </div>
+
+    <div class="loading-detalle" *ngIf="estudianteActivo.cargando">
+      <div class="spinner-grande"></div>
+      <p>Cargando información financiera...</p>
+    </div>
+
+    <!-- ── TAB RESUMEN ── -->
+    <div class="tab-content" *ngIf="tabActiva === 'resumen' && !estudianteActivo.cargando">
+
+      <p class="fecha-consulta">Consultado el {{ fechaConsulta }}</p>
+
+      <div class="estado-hero"
+        [class.vencido]="estadoGeneralAnio === 'vencido'"
+        [class.aldia]="estadoGeneralAnio !== 'vencido'">
+        <div class="hero-icono">
+          <span *ngIf="estadoGeneralAnio === 'vencido'">⚠️</span>
+          <span *ngIf="estadoGeneralAnio !== 'vencido'">✅</span>
+        </div>
+        <div class="hero-texto">
+          <ng-container *ngIf="estadoGeneralAnio !== 'vencido'">
+            <p class="hero-estado">¡Estás al día!</p>
+            <p class="hero-sub">No tienes saldos vencidos</p>
+          </ng-container>
+          <ng-container *ngIf="estadoGeneralAnio === 'vencido'">
+            <p class="hero-estado">Tienes pagos vencidos</p>
+            <p class="hero-monto">{{ formatPeso(saldoVencidoAnio) }}</p>
+            <p class="hero-sub" *ngIf="saldoPendienteAnio > 0">
+              + {{ formatPeso(saldoPendienteAnio) }} pendiente por vencer
+            </p>
+          </ng-container>
+        </div>
+      </div>
+
+      <div class="resumen-cards">
+        <div class="resumen-card alerta" *ngIf="saldoVencidoAnio > 0">
+          <span class="rc-icono">🚨</span>
+          <span class="rc-label">Vencido</span>
+          <span class="rc-valor">{{ formatPeso(saldoVencidoAnio) }}</span>
+          <span class="rc-sub">Requiere pago urgente</span>
+        </div>
+        <div class="resumen-card advertencia" *ngIf="saldoPendienteAnio > 0">
+          <span class="rc-icono">📅</span>
+          <span class="rc-label">Total pendiente</span>
+          <span class="rc-valor">{{ formatPeso(saldoPendienteAnio) }}</span>
+          <span class="rc-sub">Saldo por cancelar</span>
+        </div>
+        <div class="resumen-card positivo">
+          <span class="rc-icono">✅</span>
+          <span class="rc-label">Pagado</span>
+          <span class="rc-valor">{{ formatPeso(totalPagadoAnio) }}</span>
+          <span class="rc-sub">Total acumulado</span>
+        </div>
+        <div class="resumen-card neutral" *ngIf="ultimoPagoAnio > 0">
+          <span class="rc-icono">🕐</span>
+          <span class="rc-label">Último pago</span>
+          <span class="rc-valor">{{ formatPeso(ultimoPagoAnio) }}</span>
+          <span class="rc-sub">{{ fechaUltimoPagoAnio }}</span>
+        </div>
+      </div>
+
+      <div class="pendientes-seccion" *ngIf="movimientosPendientes.length > 0">
+        <div class="pendientes-header">
+          <h4 class="seccion-sub">Conceptos pendientes</h4>
+          <div class="filtro-pendientes-wrap">
+            <span class="filtro-icon">🔍</span>
+            <input type="text" class="filtro-pendientes-input"
+              placeholder="Buscar concepto..."
+              [(ngModel)]="filtroPendientesTexto" />
+          </div>
+          <input type="date" class="filtro-fecha filtro-fecha-sm"
+            [(ngModel)]="filtroPendientesFeInicio"
+            [max]="filtroPendientesFeFin || ''"
+            title="Desde" />
+          <input type="date" class="filtro-fecha filtro-fecha-sm"
+            [(ngModel)]="filtroPendientesFeFin"
+            [min]="filtroPendientesFeInicio || ''"
+            title="Hasta" />
+        </div>
+        <div class="pendiente-item" *ngFor="let mov of movimientosPendientesFiltrados"
+          [class.vencido]="mov.vencido">
+          <div class="pendiente-izq">
+            <span class="pendiente-concepto">{{ mov.nombre_producto_servicio }}</span>
+            <span class="pendiente-fecha">{{ formatearFecha(mov.fecha) }}</span>
+          </div>
+          <div class="pendiente-der">
+            <span class="pendiente-monto">{{ formatPeso(mov.saldo) }}</span>
+            <span class="pendiente-tag"
+              [class.vencido]="mov.vencido"
+              [class.por-vencer]="!mov.vencido">
+              {{ mov.vencido ? 'Vencido' : 'Pendiente' }}
+            </span>
+          </div>
+        </div>
+        <div class="sin-detalle" *ngIf="movimientosPendientesFiltrados.length === 0">
+          <span>No hay conceptos que coincidan con la búsqueda</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ── TAB PAGOS ── -->
+    <div class="tab-content" *ngIf="tabActiva === 'pagos' && !estudianteActivo.cargando">
+
+      <div class="filtros-bar">
+        <div class="filtro-input-wrap">
+          <span class="filtro-icon">🔍</span>
+          <input type="text" class="filtro-input"
+            placeholder="Buscar por medio de pago, acudiente o referencia..."
+            [(ngModel)]="filtroPagosTexto" />
+        </div>
+        <input type="date" class="filtro-fecha"
+          [(ngModel)]="filtroPagosFechaInicio"
+          [max]="filtroPagosFechaFin || ''"
+          title="Desde" />
+        <input type="date" class="filtro-fecha"
+          [(ngModel)]="filtroPagosFechaFin"
+          [min]="filtroPagosFechaInicio || ''"
+          title="Hasta" />
+      </div>
+
+      <div class="sin-registros" *ngIf="pagosFiltrados.length === 0">
+        <span>📭</span><p>No se encontraron pagos para {{ anioSeleccionado }}.</p>
+      </div>
+
+      <div class="acord-lista" *ngIf="pagosFiltrados.length > 0">
+        <div class="acord-item pago-item"
+          *ngFor="let pago of pagosFiltrados"
+          [class.anulado]="pago.estadoPago === 'Anulado'"
+          [class.abierto]="esPagoAbierto(pago.id)">
+
+          <div class="acord-header" (click)="togglePago(pago.id)">
+            <div class="acord-header-izq">
+              <span class="acord-concepto">{{ pago.tipo_pago }}</span>
+              <span class="acord-fecha-sub">{{ formatearFecha(pago.fecha) }} · {{ pago.nombre_acudiente }}</span>
+            </div>
+            <div class="acord-header-der">
+              <span class="acord-monto-pago">{{ formatPeso(pago.valor_recibido) }}</span>
+              <button class="btn-comprobante"
+                [class.cargando]="esDescargandoComprobante(pago.id)"
+                [disabled]="esDescargandoComprobante(pago.id)"
+                (click)="descargarComprobante(pago.id, $event)"
+                title="Descargar comprobante">
+                <span *ngIf="!esDescargandoComprobante(pago.id)">📄 Comprobante</span>
+                <span *ngIf="esDescargandoComprobante(pago.id)" class="spinner-mini-btn"></span>
+              </button>
+              <span class="acord-chevron">{{ esPagoAbierto(pago.id) ? '▲' : '▼' }}</span>
+            </div>
+          </div>
+
+          <div class="acord-body" *ngIf="esPagoAbierto(pago.id)">
+            <div class="detalle-cargando" *ngIf="esCargandoDetalle(pago.id)">
+              <div class="spinner-mini"></div><span>Cargando detalle...</span>
+            </div>
+
+            <ng-container *ngIf="!esCargandoDetalle(pago.id)">
+
+              <!-- Datos simplificados del pago -->
+              <div class="pago-montos-fila">
+                <div class="acord-field">
+                  <span class="acord-label">Fecha</span>
+                  <span class="acord-value">{{ formatearFecha(pago.fecha) }}</span>
+                </div>
+                <div class="acord-field">
+                  <span class="acord-label">Acudiente</span>
+                  <span class="acord-value">{{ pago.nombre_acudiente }}</span>
+                </div>
+                <div class="acord-field">
+                  <span class="acord-label">Valor recibido</span>
+                  <span class="acord-value bold">{{ formatPeso(pago.valor_recibido) }}</span>
+                </div>
+                <div class="acord-field" *ngIf="pago.valor_aplicado_cuentas !== pago.valor_recibido">
+                  <span class="acord-label">Valor aplicado</span>
+                  <span class="acord-value">{{ formatPeso(pago.valor_aplicado_cuentas) }}</span>
+                </div>
+                <div class="acord-field" *ngIf="pago.referencia_bancaria">
+                  <span class="acord-label">Referencia</span>
+                  <span class="acord-value">{{ pago.referencia_bancaria }}</span>
+                </div>
+              </div>
+
+              <div class="acord-field full alerta-anulacion" *ngIf="pago.estadoPago === 'Anulado'">
+                <span class="acord-label">Anulado por</span>
+                <span class="acord-value">{{ pago.nombre_completo_usuario_anulacion }} · {{ formatearFecha(pago.fecha_anulacion) }}</span>
+              </div>
+
+              <!-- Cobros que se pagaron con este pago -->
+              <div class="detalle-seccion" *ngIf="getDetallePago(pago.id).length > 0">
+                <p class="detalle-titulo">Cobros cancelados con este pago</p>
+                <div class="detalle-item" *ngFor="let dp of getDetallePago(pago.id)">
+                  <div class="detalle-izq">
+                    <span class="detalle-concepto">{{ dp.nombre_producto_servicio }}</span>
+                    <span class="detalle-fecha">{{ formatearFecha(dp.fecha) }}</span>
+                  </div>
+                  <span class="detalle-monto">{{ formatPeso(dp.valor_aplicado) }}</span>
+                </div>
+              </div>
+
+              <div class="sin-detalle" *ngIf="getDetallePago(pago.id).length === 0">
+                <span>Sin detalle de cobros asociados</span>
+              </div>
+
+            </ng-container>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ── TAB COBROS ── -->
+    <div class="tab-content" *ngIf="tabActiva === 'cobros' && !estudianteActivo.cargando">
+
+      <div class="filtros-bar">
+        <div class="filtro-input-wrap">
+          <span class="filtro-icon">🔍</span>
+          <input type="text" class="filtro-input"
+            placeholder="Buscar por concepto, categoría o valor..."
+            [(ngModel)]="filtroCobrosTexto" />
+        </div>
+        <select class="filtro-select" [(ngModel)]="filtroCobrosEstado">
+          <option value="">Todos los estados</option>
+          <option value="Pagado">Pagado</option>
+          <option value="Pendiente">Pendiente</option>
+          <option value="Vencido">Vencido</option>
+        </select>
+        <input type="date" class="filtro-fecha"
+          [(ngModel)]="filtroCobrosFeInicio"
+          [max]="filtroCobrosFeFin || ''"
+          title="Desde" />
+        <input type="date" class="filtro-fecha"
+          [(ngModel)]="filtroCobrosFeFin"
+          [min]="filtroCobrosFeInicio || ''"
+          title="Hasta" />
+      </div>
+
+      <div class="sin-registros" *ngIf="cobrosFiltrados.length === 0">
+        <span>📭</span><p>No se encontraron cobros para {{ anioSeleccionado }}.</p>
+      </div>
+
+      <div class="acord-lista" *ngIf="cobrosFiltrados.length > 0">
+        <div class="acord-item cobro-item"
+          *ngFor="let cobro of cobrosFiltrados"
+          [class.pagado]="cobro.estadoCobro === 'Pagado'"
+          [class.vencido-item]="cobro.estadoCobro === 'Vencido'"
+          [class.abierto]="esCobrosAbierto(cobro.id)">
+
+          <div class="acord-header" (click)="toggleCobro(cobro.id)">
+            <div class="acord-header-izq">
+              <span class="acord-concepto">{{ cobro.nombre_producto_servicio }}</span>
+              <span class="acord-fecha-sub">{{ formatearFecha(cobro.fecha) }} · {{ cobro.nombre_clasificacion }}</span>
+            </div>
+            <div class="acord-header-der">
+              <span class="acord-monto-cobro">{{ formatPeso(cobro.valor) }}</span>
+              <span class="acord-badge"
+                [class.pagado]="cobro.estadoCobro === 'Pagado'"
+                [class.pendiente]="cobro.estadoCobro === 'Pendiente'"
+                [class.vencido]="cobro.estadoCobro === 'Vencido'">
+                {{ cobro.estadoCobro }}
+              </span>
+              <span class="acord-chevron">{{ esCobrosAbierto(cobro.id) ? '▲' : '▼' }}</span>
+            </div>
+          </div>
+
+          <div class="acord-body" *ngIf="esCobrosAbierto(cobro.id)">
+            <div class="detalle-cargando" *ngIf="esCargandoDetalle(cobro.id)">
+              <div class="spinner-mini"></div><span>Cargando detalle...</span>
+            </div>
+
+            <ng-container *ngIf="!esCargandoDetalle(cobro.id)">
+              <div class="acord-grid">
+                <div class="acord-field">
+                  <span class="acord-label">Valor del cobro</span>
+                  <span class="acord-value bold">{{ formatPeso(cobro.valor) }}</span>
+                </div>
+                <div class="acord-field">
+                  <span class="acord-label">Valor pagado</span>
+                  <span class="acord-value">{{ formatPeso(cobro.valor_pagado) }}</span>
+                </div>
+                <div class="acord-field" [class.saldo-alerta]="cobro.saldo > 0">
+                  <span class="acord-label">Saldo pendiente</span>
+                  <span class="acord-value bold">{{ formatPeso(cobro.saldo) }}</span>
+                </div>
+                <div class="acord-field full" *ngIf="cobro.detalle">
+                  <span class="acord-label">Observaciones</span>
+                  <span class="acord-value">{{ cobro.detalle }}</span>
+                </div>
+              </div>
+
+              <div class="detalle-seccion" *ngIf="getDetalleCobro(cobro.id).length > 0">
+                <p class="detalle-titulo">Pagos aplicados a este cobro</p>
+                <div class="detalle-item" *ngFor="let dc of getDetalleCobro(cobro.id)"
+                  [class.detalle-anulado]="dc.anulado === '1' || dc.anulado === 1">
+                  <div class="detalle-izq">
+                    <span class="detalle-concepto">{{ dc.tipo_pago }}</span>
+                    <span class="detalle-fecha">
+                      {{ formatearFecha(dc.fecha_pago) }}
+                      <span *ngIf="dc.referencia_bancaria"> · Ref: {{ dc.referencia_bancaria }}</span>
+                    </span>
+                  </div>
+                  <div class="detalle-der">
+                    <span class="detalle-monto">{{ formatPeso(dc.valor_aplicado) }}</span>
+                    <span class="detalle-anulado-badge" *ngIf="dc.anulado === '1' || dc.anulado === 1">Anulado</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="sin-detalle" *ngIf="getDetalleCobro(cobro.id).length === 0 && cobro.valor_pagado > 0">
+                <span>Sin detalle de pagos disponible</span>
+              </div>
+            </ng-container>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ── TAB MOVIMIENTOS ── -->
+    <div class="tab-content" *ngIf="tabActiva === 'movimientos' && !estudianteActivo.cargando">
+
+      <div class="filtros-bar">
+        <div class="filtro-input-wrap">
+          <span class="filtro-icon">🔍</span>
+          <input type="text" class="filtro-input"
+            placeholder="Buscar por concepto o valor..."
+            [(ngModel)]="filtroMovTexto" />
+        </div>
+        <select class="filtro-select filtro-select-sm" [(ngModel)]="filtroMovEstado">
+          <option value="">Todos</option>
+          <option value="cobro">Cobros</option>
+          <option value="pago">Pagos</option>
+        </select>
+        <input type="date" class="filtro-fecha"
+          [(ngModel)]="filtroMovFeInicio"
+          [max]="filtroMovFeFin || ''"
+          title="Desde" />
+        <input type="date" class="filtro-fecha"
+          [(ngModel)]="filtroMovFeFin"
+          [min]="filtroMovFeInicio || ''"
+          title="Hasta" />
+      </div>
+
+      <div class="sin-registros" *ngIf="movimientosFiltrados.length === 0">
+        <span>📭</span><p>No se encontraron movimientos para {{ anioSeleccionado }}.</p>
+      </div>
+
+      <div class="acord-lista" *ngIf="movimientosFiltrados.length > 0">
+        <div class="acord-item"
+          *ngFor="let item of movimientosFiltrados"
+          [class.mov-es-cobro]="item._tipo === 'cobro'"
+          [class.mov-es-pago]="item._tipo === 'pago'"
+          [class.mov-vencido]="item._tipo === 'cobro' && item.estadoCobro === 'Vencido'"
+          [class.mov-pagado]="item._tipo === 'cobro' && item.estadoCobro === 'Pagado'"
+          [class.anulado]="item._tipo === 'pago' && item.estadoPago === 'Anulado'"
+          [class.abierto]="esMovAbierto(item._tipo, item.id)">
+
+          <div class="acord-header" (click)="toggleMov(item._tipo, item.id)">
+            <div class="acord-header-izq">
+              <div class="mov-tipo-pill-inline">
+                <span *ngIf="item._tipo === 'cobro'">📄 Cobro</span>
+                <span *ngIf="item._tipo === 'pago'">💳 Pago</span>
+              </div>
+              <span class="acord-concepto">{{ item._descripcion }}</span>
+              <span class="acord-fecha-sub">
+                {{ formatearFecha(item.fecha) }}
+                <span *ngIf="item._tipo === 'cobro'"> · {{ item.nombre_clasificacion }}</span>
+                <span *ngIf="item._tipo === 'pago'"> · {{ item.nombre_acudiente }}</span>
+              </span>
+            </div>
+            <div class="acord-header-der">
+              <span class="acord-monto-cobro" *ngIf="item._tipo === 'cobro'">{{ formatPeso(item._monto) }}</span>
+              <span class="acord-monto-pago"  *ngIf="item._tipo === 'pago'">+{{ formatPeso(item._monto) }}</span>
+              <!-- Badge estado solo para cobros -->
+              <span class="acord-badge" *ngIf="item._tipo === 'cobro'"
+                [class.pagado]="item._estado === 'Pagado'"
+                [class.pendiente]="item._estado === 'Pendiente'"
+                [class.vencido]="item._estado === 'Vencido'">
+                {{ item._estado }}
+              </span>
+              <!-- Botón comprobante solo para pagos -->
+              <button class="btn-comprobante"
+                *ngIf="item._tipo === 'pago'"
+                [class.cargando]="esDescargandoComprobante(item.id)"
+                [disabled]="esDescargandoComprobante(item.id)"
+                (click)="descargarComprobante(item.id, $event)"
+                title="Descargar comprobante">
+                <span *ngIf="!esDescargandoComprobante(item.id)">📄 Comprobante</span>
+                <span *ngIf="esDescargandoComprobante(item.id)" class="spinner-mini-btn"></span>
+              </button>
+              <span class="acord-chevron">{{ esMovAbierto(item._tipo, item.id) ? '▲' : '▼' }}</span>
+            </div>
+          </div>
+
+          <div class="acord-body" *ngIf="esMovAbierto(item._tipo, item.id)">
+            <div class="detalle-cargando" *ngIf="esCargandoDetalle(item.id)">
+              <div class="spinner-mini"></div><span>Cargando detalle...</span>
+            </div>
+
+            <ng-container *ngIf="!esCargandoDetalle(item.id)">
+
+              <!-- Detalle cobro dentro de movimientos -->
+              <ng-container *ngIf="item._tipo === 'cobro'">
+                <div class="acord-grid">
+                  <div class="acord-field">
+                    <span class="acord-label">Valor del cobro</span>
+                    <span class="acord-value bold">{{ formatPeso(item.valor) }}</span>
+                  </div>
+                  <div class="acord-field">
+                    <span class="acord-label">Valor pagado</span>
+                    <span class="acord-value">{{ formatPeso(item.valor_pagado) }}</span>
+                  </div>
+                  <div class="acord-field" [class.saldo-alerta]="item.saldo > 0">
+                    <span class="acord-label">Saldo pendiente</span>
+                    <span class="acord-value bold">{{ formatPeso(item.saldo) }}</span>
+                  </div>
+                </div>
+                <div class="detalle-seccion" *ngIf="getDetalleCobro(item.id).length > 0">
+                  <p class="detalle-titulo">Pagos aplicados</p>
+                  <div class="detalle-item" *ngFor="let dc of getDetalleCobro(item.id)"
+                    [class.detalle-anulado]="dc.anulado === '1' || dc.anulado === 1">
+                    <div class="detalle-izq">
+                      <span class="detalle-concepto">{{ dc.tipo_pago }}</span>
+                      <span class="detalle-fecha">{{ formatearFecha(dc.fecha_pago) }}<span *ngIf="dc.referencia_bancaria"> · {{ dc.referencia_bancaria }}</span></span>
+                    </div>
+                    <div class="detalle-der">
+                      <span class="detalle-monto">{{ formatPeso(dc.valor_aplicado) }}</span>
+                      <span class="detalle-anulado-badge" *ngIf="dc.anulado === '1' || dc.anulado === 1">Anulado</span>
+                    </div>
+                  </div>
+                </div>
+              </ng-container>
+
+              <!-- Detalle pago dentro de movimientos -->
+              <ng-container *ngIf="item._tipo === 'pago'">
+                <div class="pago-montos-fila">
+                  <div class="acord-field">
+                    <span class="acord-label">Fecha</span>
+                    <span class="acord-value">{{ formatearFecha(item.fecha) }}</span>
+                  </div>
+                  <div class="acord-field">
+                    <span class="acord-label">Acudiente</span>
+                    <span class="acord-value">{{ item.nombre_acudiente }}</span>
+                  </div>
+                  <div class="acord-field">
+                    <span class="acord-label">Valor recibido</span>
+                    <span class="acord-value bold">{{ formatPeso(item.valor_recibido) }}</span>
+                  </div>
+                  <div class="acord-field" *ngIf="item.valor_aplicado_cuentas !== item.valor_recibido">
+                    <span class="acord-label">Valor aplicado</span>
+                    <span class="acord-value">{{ formatPeso(item.valor_aplicado_cuentas) }}</span>
+                  </div>
+                  <div class="acord-field" *ngIf="item.referencia_bancaria">
+                    <span class="acord-label">Referencia</span>
+                    <span class="acord-value">{{ item.referencia_bancaria }}</span>
+                  </div>
+                </div>
+                <div class="detalle-seccion" *ngIf="getDetallePago(item.id).length > 0">
+                  <p class="detalle-titulo">Cobros cancelados con este pago</p>
+                  <div class="detalle-item" *ngFor="let dp of getDetallePago(item.id)">
+                    <div class="detalle-izq">
+                      <span class="detalle-concepto">{{ dp.nombre_producto_servicio }}</span>
+                      <span class="detalle-fecha">{{ formatearFecha(dp.fecha) }}</span>
+                    </div>
+                    <span class="detalle-monto">{{ formatPeso(dp.valor_aplicado) }}</span>
+                  </div>
+                </div>
+              </ng-container>
+
+            </ng-container>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <button class="btn-scroll-top" [class.show]="mostrarBotonArriba" (click)="scrollToTop()">
+    <i class="fas fa-chevron-up"></i>
+  </button>
+
+</div>
