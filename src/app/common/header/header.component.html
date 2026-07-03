@@ -15,6 +15,11 @@
 
   <!-- SECCIÓN DERECHA: Botones -->
   <div class="seccion-derecha">
+    <button class="header-btn pin-btn" *ngIf="esTrackeable" (click)="togglePin()" [class.pinned]="esFijado" [title]="esFijado ? 'Quitar de accesos rápidos' : 'Fijar como acceso rápido'">
+      <span class="btn-icon">{{ esFijado ? '📌' : '📍' }}</span>
+      <span class="btn-label">{{ esFijado ? 'Fijado' : 'Fijar' }}</span>
+    </button>
+
     <button class="header-btn help-btn" (click)="abrirAyuda()" title="Ayuda">
       <span class="btn-icon">?</span>
       <span class="btn-label">Ayuda</span>

@@ -2,8 +2,6 @@
    HEADER CON 3 SECCIONES Y BORDE NARANJA
    ============================================ */
 .franja-titulo {
-  position: relative;
-  z-index: 10;
   background: #FAF8F3;
   padding: 16px 20px;
   display: grid;
@@ -247,6 +245,26 @@
 .help-btn:hover {
   background: #FFC107;
   color: #FFFFFF;
+}
+
+.pin-btn {
+  border-color: #9E9E9E;
+  color: #757575;
+}
+
+.pin-btn:hover {
+  background: rgba(158, 158, 158, 0.1);
+  border-color: #757575;
+}
+
+.pin-btn.pinned {
+  border-color: #FFC107;
+  color: #8B6914;
+  background: rgba(255, 193, 7, 0.1);
+}
+
+.pin-btn.pinned:hover {
+  background: rgba(255, 193, 7, 0.2);
 }
 
 .btn-icon {

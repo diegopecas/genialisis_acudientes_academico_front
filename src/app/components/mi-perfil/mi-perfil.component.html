@@ -19,7 +19,7 @@
   <!-- Foto del acudiente - Superior derecha -->
   <div
     class="foto-container"
-    *ngIf="habeasDataVerificado && model.idPersona > 0"
+    *ngIf="habeasDataVerificado && model.idPersona"
   >
     <app-foto-persona
       [idPersona]="model.idPersona"

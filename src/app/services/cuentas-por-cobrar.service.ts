@@ -165,7 +165,7 @@ export class CuentasPorCobrarService {
       );
   }
 
-  obtenerReporteCarteraEstudiantes(anio: number, idEstudiante: number | null = null) {
+  obtenerReporteCarteraEstudiantes(anio: number, idEstudiante: string | null = null) {
     let url = this.servicio + `/reporte-cartera-estudiantes/${anio}`;
     if (idEstudiante !== null) {
       url += `/${idEstudiante}`;
@@ -182,7 +182,7 @@ export class CuentasPorCobrarService {
       );
   }
 
-  obtenerMultiplesByIds(ids: number[]) {
+  obtenerMultiplesByIds(ids: string[]) {
     const body = JSON.stringify({ ids: ids });
     return this.http.post<HttpResponse<Object>>(
       this.servicio + '/multiple',
@@ -203,7 +203,7 @@ export class CuentasPorCobrarService {
     );
   }
 
-  generarDesdeContrato(idContrato: number, idUsuario: number | null) {
+  generarDesdeContrato(idContrato: string, idUsuario: string | null) {
     const body = JSON.stringify({
       id_contrato: idContrato,
       id_usuario: idUsuario
@@ -229,7 +229,16 @@ export class CuentasPorCobrarService {
         catchError(this.handleError)
       );
   }
-
+  generarDesdeCursoExtra(data: any) {
+    const body = JSON.stringify(data);
+    return this.http.post<any>(this.servicio + '/generar-desde-curso-extra', body, httpOptions).pipe(
+      tap((respuesta: any) => {
+        return respuesta;
+      }),
+      catchError(this.handleError)
+    );
+  }
+ 
   private handleError(error: HttpErrorResponse) {
     return throwError(() => error);
   }

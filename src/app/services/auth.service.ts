@@ -17,11 +17,11 @@ export class AuthService {
     return this.acudientesService.obtenerMisEstudiantesIds(idPersona).pipe(
       map((response: any) => {
         const body = response.body as any[];
-        const idsEstudiantes = body.map(e => e.id_estudiante);
-        
+        const idsEstudiantes: string[] = body.map(e => e.id_estudiante);
+
         sessionStorage.setItem('estudiantesIds', JSON.stringify(idsEstudiantes));
         console.log('IDs de estudiantes almacenados:', idsEstudiantes);
-        
+
         return true;
       }),
       catchError((error) => {
@@ -34,20 +34,19 @@ export class AuthService {
   /**
    * Verifica si un estudiante pertenece al usuario actual
    */
-  esEstudianteDelUsuario(idEstudiante: number): boolean {
+  esEstudianteDelUsuario(idEstudiante: string): boolean {
     try {
       const idsString = sessionStorage.getItem('estudiantesIds');
       if (!idsString) {
         console.warn('No hay IDs de estudiantes en sessionStorage');
         return false;
       }
+      const idsEstudiantes: string[] = JSON.parse(idsString);
+      const perteneceAlUsuario = idsEstudiantes.includes(idEstudiante);
 
-      const idsEstudiantes: number[] = JSON.parse(idsString);
-      const perteneceAlUsuario = idsEstudiantes.includes(Number(idEstudiante));
-      
       console.log(`Verificando acceso: estudiante ${idEstudiante}, permitido: ${perteneceAlUsuario}`);
       console.log('IDs permitidos:', idsEstudiantes);
-      
+
       return perteneceAlUsuario;
     } catch (error) {
       console.error('Error verificando estudiante:', error);
@@ -58,7 +57,7 @@ export class AuthService {
   /**
    * Obtiene los IDs de estudiantes del usuario
    */
-  getEstudiantesIds(): number[] {
+  getEstudiantesIds(): string[] {
     try {
       const idsString = sessionStorage.getItem('estudiantesIds');
       return idsString ? JSON.parse(idsString) : [];

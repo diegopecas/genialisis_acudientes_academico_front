@@ -125,7 +125,6 @@ export class AcudientesService {
       catchError(this.handleError)
     );
   }
-  // Agregar este método a la clase AcudientesService en acudientes.service.ts
 
   obtenerMisEstudiantes(idPersona: any) {
     return this.http
@@ -143,10 +142,11 @@ export class AcudientesService {
         catchError(this.handleError)
       );
   }
+
   obtenerMisEstudiantesIds(idPersona: any) {
     return this.http
-      .get<HttpResponse<Object>>(`${this.servicio}/mis-estudiantes-ids/${idPersona}`, { 
-        observe: 'response' 
+      .get<HttpResponse<Object>>(`${this.servicio}/mis-estudiantes-ids/${idPersona}`, {
+        observe: 'response'
       })
       .pipe(
         tap((response: HttpResponse<Object>) => {
@@ -159,6 +159,7 @@ export class AcudientesService {
         catchError(this.handleError)
       );
   }
+
   private handleError(error: HttpErrorResponse) {
     return throwError(() => error);
   }

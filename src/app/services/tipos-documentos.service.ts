@@ -5,8 +5,9 @@ import { Observable, throwError } from 'rxjs';
 import { catchError, tap } from 'rxjs/operators';
 import { httpOptions } from './http';
 
+// Interfaz original - NO MODIFICAR (usada por DocumentosPersonaComponent y otros)
 export interface TipoDocumento {
-  id: number;
+  id: string;
   codigo: string;
   nombre: string;
   descripcion?: string;
@@ -14,8 +15,22 @@ export interface TipoDocumento {
   requiere_vencimiento: number;
   requiere_firma?: number;
   dias_alerta_vencimiento?: number;
-  permite_multiples: number; // 0=único, 1=múltiples
+  permite_multiples: number;
   obligatorio: number;
+  activo: number;
+}
+
+// Interfaz para el CRUD de tipos de documentos
+export interface TipoDocumentoCrud {
+  id?: string;
+  codigo: string;
+  nombre: string;
+  descripcion?: string;
+  requiere_vencimiento: number;
+  requiere_firma: number;
+  dias_alerta_vencimiento?: number;
+  permite_multiples: number;
+  modificable_acudientes: number;
   activo: number;
 }
 
@@ -58,7 +73,7 @@ export class TiposDocumentosService {
       );
   }
 
-  obtenerById(id: number) {
+  obtenerById(id: string) {
     return this.http
       .get<HttpResponse<Object>>(this.servicio + `/${id}`, { observe: 'response' })
       .pipe(
@@ -66,6 +81,57 @@ export class TiposDocumentosService {
           let respuesta: any = response.body;
           if (respuesta.error) {
             throw respuesta.error;
+          }
+          return response;
+        }),
+        catchError(this.handleError)
+      );
+  }
+
+  // --- Métodos nuevos para CRUD ---
+
+  obtenerPorId(id: string) {
+    return this.obtenerById(id);
+  }
+
+  crear(data: TipoDocumentoCrud) {
+    return this.http
+      .post<HttpResponse<Object>>(this.servicio, data, httpOptions)
+      .pipe(
+        tap((response: any) => {
+          if (response.error) {
+            throw response.error;
+          }
+          return response;
+        }),
+        catchError(this.handleError)
+      );
+  }
+
+  actualizar(data: TipoDocumentoCrud) {
+    return this.http
+      .put<HttpResponse<Object>>(this.servicio, data, httpOptions)
+      .pipe(
+        tap((response: any) => {
+          if (response.error) {
+            throw response.error;
+          }
+          return response;
+        }),
+        catchError(this.handleError)
+      );
+  }
+
+  eliminar(id: string) {
+    return this.http
+      .request<HttpResponse<Object>>('delete', this.servicio, {
+        ...httpOptions,
+        body: { id: id }
+      })
+      .pipe(
+        tap((response: any) => {
+          if (response.error) {
+            throw response.error;
           }
           return response;
         }),

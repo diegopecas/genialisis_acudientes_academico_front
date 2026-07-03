@@ -19,7 +19,7 @@ export class EstudianteGuard implements CanActivate {
   ): boolean {
     // Obtener el ID del estudiante de los parámetros de la ruta
     const idEstudiante = route.params['id'];
-    
+
     if (!idEstudiante) {
       console.warn('No se encontró ID de estudiante en la ruta');
       this.mostrarErrorYRedirigir('ID de estudiante no válido');
@@ -27,8 +27,8 @@ export class EstudianteGuard implements CanActivate {
     }
 
     // Verificar si el estudiante pertenece al usuario actual
-    const tieneAcceso = this.authService.esEstudianteDelUsuario(Number(idEstudiante));
-    
+    const tieneAcceso = this.authService.esEstudianteDelUsuario(idEstudiante);
+
     if (!tieneAcceso) {
       console.warn(`Acceso denegado al estudiante ${idEstudiante}`);
       this.mostrarErrorYRedirigir('No tienes permisos para acceder a la información de este estudiante');

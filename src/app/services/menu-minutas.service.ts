@@ -36,7 +36,7 @@ export class MenuMinutasService {
       );
   }
 
-  asignar(idMenu: number, minutas: any[]) {
+  asignar(idMenu: string, minutas: any[]) {
     const body = JSON.stringify({ minutas: minutas });
 
     return this.http.post<any>(
@@ -55,7 +55,7 @@ export class MenuMinutasService {
     );
   }
 
-  verificarConflictos(idMenu: number, minutas: any[]) {
+  verificarConflictos(idMenu: string, minutas: any[]) {
     const body = JSON.stringify({ minutas: minutas });
 
     return this.http.post<any>(
@@ -73,9 +73,14 @@ export class MenuMinutasService {
     );
   }
 
-  obtenerMinutaCompleta() {
+  obtenerMinutaCompleta(idClasificacion?: string) {
+    let url = this.servicioMinutas + '/completa';
+    if (idClasificacion) {
+      url += `?id_clasificacion=${idClasificacion}`;
+    }
+
     return this.http
-      .get<HttpResponse<Object>>(this.servicioMinutas + '/completa', {
+      .get<HttpResponse<Object>>(url, {
         observe: 'response',
       })
       .pipe(

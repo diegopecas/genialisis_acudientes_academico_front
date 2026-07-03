@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { InstitucionConfigService } from './institucion-config.service';
+import { ConfiguracionGlobalService } from './configuracion-global.service';
 import { jsPDF } from 'jspdf';
 import { firstValueFrom } from 'rxjs';
 import { PlantillasService, PlantillaContrato } from './plantillas.service';
@@ -11,22 +12,58 @@ export interface DatosContratoPDF {
   configuracion: any;
 }
 
+// Interfaz para la configuración de firmas desde el JSON
+export interface ConfiguracionFirma {
+  tipo: 'acudiente' | 'representante';
+  placeholder: string;
+  label: string;
+  cedula: string;
+  rol: string;
+  firmaDigital: boolean; // true = firma digital, false = firma impresa
+}
+
+// Interfaz para coordenadas de firma digital
+export interface CoordenadaFirma {
+  signIndex: number;
+  recipientIndex: number;
+  seccion: string;
+  page: number;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
 @Injectable({
   providedIn: 'root',
 })
 export class ExportarPdfContratoService {
   private plantillaCache: PlantillaContrato | null = null;
+  
+  // Contador global de campos de firma para todo el documento
+  private signIndexGlobal: number = 0;
+  
+  // Array para almacenar todas las coordenadas de firma
+  private coordenadasFirmas: CoordenadaFirma[] = [];
 
   constructor(
     private plantillasService: PlantillasService,
-    private institucionConfigService: InstitucionConfigService
+    private institucionConfigService: InstitucionConfigService,
+    private configuracionGlobalService: ConfiguracionGlobalService
   ) {}
 
   async generarPDF(datos: DatosContratoPDF): Promise<void> {
     try {
+      // Resetear contadores al inicio de cada generación
+      this.signIndexGlobal = 0;
+      this.coordenadasFirmas = [];
+      
       const plantilla = await this.cargarPlantilla();
       const plantillaProcesada = this.reemplazarVariables(plantilla, datos);
       await this.generarPDFDesdePlantilla(plantillaProcesada, datos);
+      
+      // Log de coordenadas para debug
+      console.log('📍 Coordenadas de firma generadas:', this.coordenadasFirmas);
     } catch (error) {
       console.error('Error al generar PDF:', error);
       throw error;
@@ -103,6 +140,12 @@ export class ExportarPdfContratoService {
       '{{valor_pension_formateado}}': this.formatearMoneda(
         contrato.valor_pension
       ),
+      '{{valor_pension_mensual_formateado}}': this.formatearMoneda(
+        contrato.numero_cuotas > 0 
+          ? Math.round(contrato.valor_pension / contrato.numero_cuotas) 
+          : contrato.valor_pension
+      ),
+      '{{numero_cuotas}}': contrato.numero_cuotas.toString(),
       '{{texto_primera_cuota}}': textoPrimeraCuota,
       '{{numero_cuotas_restantes}}': numeroCuotasRestantes.toString(),
       '{{mes_inicio}}': this.obtenerMesInicio(
@@ -318,11 +361,26 @@ export class ExportarPdfContratoService {
     return plantillaProcesada;
   }
 
+  /**
+   * Aplica reemplazos de variables y normaliza caracteres Unicode
+   * que jsPDF con Helvetica no soporta
+   */
   private aplicarReemplazos(
     texto: string,
     reemplazos: { [key: string]: string }
   ): string {
     let resultado = texto;
+    
+    // Normalizar bullets y caracteres Unicode que jsPDF no soporta
+    resultado = resultado.replace(/●/g, '-');
+    resultado = resultado.replace(/•/g, '-');
+    resultado = resultado.replace(/◦/g, '-');
+    resultado = resultado.replace(/▪/g, '-');
+    resultado = resultado.replace(/▸/g, '-');
+    resultado = resultado.replace(/→/g, '-');
+    resultado = resultado.replace(/►/g, '-');
+    
+    // Aplicar reemplazos de variables
     Object.keys(reemplazos).forEach((variable) => {
       resultado = resultado.replace(
         new RegExp(variable.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'),
@@ -350,6 +408,9 @@ export class ExportarPdfContratoService {
 
     const logoBase64 = await this.cargarLogoBase64();
     const firmaBase64 = await this.cargarFirmaBase64();
+
+    // Obtener configuración de firmas del JSON (si existe)
+    const configFirmas = (plantilla as any).firmas || this.getConfiguracionFirmasDefault(datos);
 
     yPos = this.dibujarEncabezado(
       doc,
@@ -439,15 +500,19 @@ export class ExportarPdfContratoService {
     );
     yPos += 5;
 
+    // SECCION 1: Firmas del contrato principal
     yPos = await this.dibujarFirmas(
       doc,
       datos,
       firmaBase64,
       yPos,
       pageWidth,
-      marginLeft
+      marginLeft,
+      configFirmas,
+      'CONTRATO'
     );
 
+    // SECCION 2: Autorización de imágenes
     if (
       datos.contrato.autoriza_imagenes === 1 &&
       plantilla.autorizacion_imagenes
@@ -470,7 +535,8 @@ export class ExportarPdfContratoService {
         pageWidth,
         marginLeft,
         contentWidth,
-        primaryColor
+        primaryColor,
+        configFirmas
       );
     }
 
@@ -479,6 +545,7 @@ export class ExportarPdfContratoService {
       datos.contrato.autoriza_pagare === 1 ||
       datos.contrato.autoriza_pagare === '1';
 
+    // SECCION 3: Carta de instrucciones
     if (autorizaPagare && plantilla.carta_instrucciones) {
       yPos = await this.dibujarCartaInstrucciones(
         doc,
@@ -489,10 +556,12 @@ export class ExportarPdfContratoService {
         marginLeft,
         contentWidth,
         primaryColor,
-        goldColor
+        goldColor,
+        configFirmas
       );
     }
 
+    // SECCION 4: Pagaré
     if (autorizaPagare && plantilla.pagare) {
       yPos = await this.dibujarPagareEjecutivo(
         doc,
@@ -503,7 +572,8 @@ export class ExportarPdfContratoService {
         marginLeft,
         contentWidth,
         primaryColor,
-        goldColor
+        goldColor,
+        configFirmas
       );
     }
 
@@ -528,36 +598,20 @@ export class ExportarPdfContratoService {
     doc.save(nombreArchivo);
   }
 
-  private async cargarLogoBase64(): Promise<string> {
-    try {
-      const logoUrl = this.institucionConfigService.getLogoUrl();
-      const response = await fetch(logoUrl);
-      const blob = await response.blob();
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result as string);
-        reader.onerror = reject;
-        reader.readAsDataURL(blob);
-      });
-    } catch (error) {
-      console.error('Error al cargar logo:', error);
-      return '';
-    }
-  }
-  private async cargarFirmaBase64(): Promise<string> {
-    try {
-      const response = await fetch('assets/images/firma_representante.png');
-      const blob = await response.blob();
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result as string);
-        reader.onerror = reject;
-        reader.readAsDataURL(blob);
-      });
-    } catch (error) {
-      console.error('Error al cargar firma:', error);
-      return '';
-    }
+  /**
+   * Configuración de firmas por defecto cuando no viene en el JSON
+   */
+  private getConfiguracionFirmasDefault(datos: DatosContratoPDF): any {
+    return {
+      acudientes: datos.acudientes.map((_, index) => ({
+        tipo: 'acudiente',
+        firmaDigital: true
+      })),
+      representante: {
+        tipo: 'representante',
+        firmaDigital: false
+      }
+    };
   }
 
   private dibujarEncabezado(
@@ -568,10 +622,16 @@ export class ExportarPdfContratoService {
     goldColor: string,
     config: any
   ): number {
+    // Logo (25x25 para que sea cuadrado/redondo)
     if (logoBase64) {
-      doc.addImage(logoBase64, 'PNG', 20, yPos, 25, 25);
+      try {
+        doc.addImage(logoBase64, 'PNG', 20, yPos, 25, 25);
+      } catch (error) {
+        console.warn('No se pudo cargar el logo');
+      }
     }
 
+    // Nombre de la institución
     doc.setFontSize(12);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor('#222');
@@ -582,6 +642,7 @@ export class ExportarPdfContratoService {
       { align: 'center' }
     );
 
+    // NIT
     doc.setFontSize(9);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor('#666');
@@ -592,14 +653,16 @@ export class ExportarPdfContratoService {
       { align: 'center' }
     );
 
+    // Eslogan
     doc.setFontSize(9);
     doc.text(
-      config.institucion_eslogan || 'ILUMINANDO MENTES - FORJANDO LÍDERES',
+      config.institucion_eslogan || 'ILUMINANDO MENTES - FORJANDO LIDERES',
       pageWidth / 2,
       yPos + 21,
       { align: 'center' }
     );
 
+    // Línea dorada
     doc.setDrawColor(goldColor);
     doc.setLineWidth(1);
     doc.line(20, yPos + 28, pageWidth - 20, yPos + 28);
@@ -626,16 +689,48 @@ export class ExportarPdfContratoService {
     yPos: number,
     marginLeft: number,
     contentWidth: number,
-    color: string
+    primaryColor: string,
+    logoBase64?: string,
+    goldColor?: string,
+    config?: any
   ): number {
+    const pageHeight = doc.internal.pageSize.getHeight();
+    
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
-    doc.setTextColor('#222');
+    doc.setTextColor(primaryColor);
 
-    const lines = doc.splitTextToSize(texto, contentWidth);
-    doc.text(lines, marginLeft, yPos);
+    const parrafos = texto.split('\n\n');
 
-    return yPos + lines.length * 5 + 6;
+    parrafos.forEach((parrafo: string) => {
+      const parrafoLimpio = parrafo.trim();
+      if (!parrafoLimpio) return;
+
+      const linesContenido = doc.splitTextToSize(parrafoLimpio, contentWidth);
+
+      const espacioNecesario = linesContenido.length * 4.2 + 2;
+      if (yPos + espacioNecesario > pageHeight - 30) {
+        doc.addPage();
+        yPos = 15;
+        if (logoBase64 && goldColor && config) {
+          yPos = this.dibujarEncabezado(
+            doc,
+            logoBase64,
+            yPos,
+            doc.internal.pageSize.getWidth(),
+            goldColor,
+            config
+          );
+        }
+        doc.setTextColor(primaryColor);
+        doc.setFontSize(10);
+      }
+
+      doc.text(linesContenido, marginLeft, yPos);
+      yPos += espacioNecesario;
+    });
+
+    return yPos + 3;
   }
 
   private dibujarClausula(
@@ -649,23 +744,33 @@ export class ExportarPdfContratoService {
     goldColor: string,
     config: any
   ): number {
-    doc.setFont('helvetica', 'bold');
+    const espacioTitulo = 12;
+    if (yPos + espacioTitulo > pageHeight - 30) {
+      doc.addPage();
+      yPos = this.dibujarEncabezado(
+        doc,
+        logoBase64,
+        15,
+        doc.internal.pageSize.getWidth(),
+        goldColor,
+        config
+      );
+    }
+
     doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
     doc.setTextColor('#222');
 
     const tituloCompleto = `CLAUSULA ${this.numeroATexto(
       clausula.numero
     ).toUpperCase()}. ${clausula.titulo}:`;
-    const linesTitulo = doc.splitTextToSize(tituloCompleto, contentWidth);
-    doc.text(linesTitulo, marginLeft, yPos);
-    yPos += linesTitulo.length * 5 + 2;
+    const tituloLines = doc.splitTextToSize(tituloCompleto, contentWidth);
+    doc.text(tituloLines, marginLeft, yPos);
+    yPos += tituloLines.length * 5 + 4;
 
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(10);
-    doc.setTextColor('#222');
 
-    const contenidoLimpio = clausula.contenido.replace(/●/g, '-');
-    const parrafos = contenidoLimpio.split('\n\n');
+    const parrafos = clausula.contenido.split('\n\n');
 
     parrafos.forEach((parrafo: string) => {
       const parrafoLimpio = parrafo.trim();
@@ -696,55 +801,249 @@ export class ExportarPdfContratoService {
     return yPos + 3;
   }
 
+  /**
+   * Dibuja el recuadro visual de firma con texto "FIRMAR AQUI" y placeholder invisible
+   */
+  private dibujarCampoFirmaDigital(
+    doc: jsPDF,
+    x: number,
+    y: number,
+    width: number,
+    recipientIndex: number,
+    nombreFirmante: string,
+    cedula: string,
+    rol: string,
+    pageNumber: number,
+    pageWidth: number,
+    pageHeight: number,
+    seccion: string
+  ): void {
+    // Incrementar contador global
+    this.signIndexGlobal++;
+    const signIndex = this.signIndexGlobal;
+    
+    const height = 20; // Alto del recuadro
+
+    // Calcular coordenadas en porcentaje para el placeholder
+    const xPercent = Math.round((x / pageWidth) * 100);
+    const yPercent = Math.round((y / pageHeight) * 100);
+    const wPercent = Math.round((width / pageWidth) * 100);
+    const hPercent = Math.round((height / pageHeight) * 100);
+
+    // Guardar coordenadas
+    this.coordenadasFirmas.push({
+      signIndex,
+      recipientIndex,
+      seccion,
+      page: pageNumber,
+      x: xPercent,
+      y: yPercent,
+      width: wPercent,
+      height: hPercent
+    });
+
+    // 1. Dibujar recuadro con borde punteado
+    doc.setDrawColor('#1a73e8'); // Azul
+    doc.setLineWidth(0.3);
+    // Línea superior
+    this.dibujarLineaPunteada(doc, x, y, x + width, y);
+    // Línea inferior
+    this.dibujarLineaPunteada(doc, x, y + height, x + width, y + height);
+    // Línea izquierda
+    this.dibujarLineaPunteadaVertical(doc, x, y, x, y + height);
+    // Línea derecha
+    this.dibujarLineaPunteadaVertical(doc, x + width, y, x + width, y + height);
+
+    // 2. Dibujar texto "FIRMAR AQUI"
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor('#1a73e8');
+    doc.text('[FIRMAR AQUI]', x + width / 2, y + 5, { align: 'center' });
+
+    // 3. Línea para la firma
+    doc.setDrawColor('#666');
+    doc.setLineWidth(0.5);
+    doc.line(x + 5, y + 12, x + width - 5, y + 12);
+
+    // 4. PLACEHOLDER INVISIBLE con coordenadas codificadas
+    const placeholder = `[[SIGN_${signIndex}:R${recipientIndex}:P${pageNumber}:X${xPercent}:Y${yPercent}:W${wPercent}:H${hPercent}]]`;
+    doc.setTextColor(255, 255, 255); // Blanco (invisible)
+    doc.setFontSize(1);
+    doc.text(placeholder, x + width / 2, y + 8, { align: 'center' });
+
+    // 5. Nombre del firmante
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor('#222');
+    doc.text(nombreFirmante, x + width / 2, y + 16, { align: 'center' });
+
+    // 6. Cédula
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7);
+    doc.text(`CC. ${cedula}`, x + width / 2, y + 19, { align: 'center' });
+
+    // 7. Rol (debajo del recuadro)
+    doc.setTextColor('#666');
+    doc.setFontSize(6);
+    doc.text(rol, x + width / 2, y + height + 3, { align: 'center' });
+  }
+
+  /**
+   * Dibuja línea punteada horizontal
+   */
+  private dibujarLineaPunteada(
+    doc: jsPDF,
+    x1: number,
+    y1: number,
+    x2: number,
+    y2: number
+  ): void {
+    const dashLength = 2;
+    const gapLength = 1;
+    let currentX = x1;
+    
+    while (currentX < x2) {
+      const endX = Math.min(currentX + dashLength, x2);
+      doc.line(currentX, y1, endX, y2);
+      currentX = endX + gapLength;
+    }
+  }
+
+  /**
+   * Dibuja línea punteada vertical
+   */
+  private dibujarLineaPunteadaVertical(
+    doc: jsPDF,
+    x1: number,
+    y1: number,
+    x2: number,
+    y2: number
+  ): void {
+    const dashLength = 2;
+    const gapLength = 1;
+    let currentY = y1;
+    
+    while (currentY < y2) {
+      const endY = Math.min(currentY + dashLength, y2);
+      doc.line(x1, currentY, x2, endY);
+      currentY = endY + gapLength;
+    }
+  }
+
+  /**
+   * Dibuja firma tradicional (sin recuadro de firma digital)
+   */
+  private dibujarFirmaTradicional(
+    doc: jsPDF,
+    x: number,
+    y: number,
+    width: number,
+    nombreFirmante: string,
+    cedula: string,
+    rol: string,
+    firmaBase64?: string
+  ): void {
+    // Si hay imagen de firma, dibujarla
+    if (firmaBase64) {
+      try {
+        // Detectar formato de la imagen desde el base64
+        let formato = 'PNG';
+        if (firmaBase64.includes('data:image/jpeg') || firmaBase64.includes('data:image/jpg')) {
+          formato = 'JPEG';
+        } else if (firmaBase64.includes('data:image/png')) {
+          formato = 'PNG';
+        }
+        doc.addImage(firmaBase64, formato, x + 10, y - 2, 50, 14);
+      } catch (error) {
+        console.warn('No se pudo insertar la firma:', error);
+      }
+    }
+
+    // Línea para la firma
+    doc.setDrawColor('#666');
+    doc.setLineWidth(0.5);
+    doc.line(x, y + 12, x + width, y + 12);
+
+    // Nombre
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor('#222');
+    doc.text(nombreFirmante, x + width / 2, y + 17, { align: 'center' });
+
+    // Cédula
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7);
+    doc.text(`CC. ${cedula}`, x + width / 2, y + 21, { align: 'center' });
+
+    // Rol
+    doc.setTextColor('#666');
+    doc.setFontSize(7);
+    doc.text(rol, x + width / 2, y + 24, { align: 'center' });
+  }
+
+  /**
+   * Dibuja firmas de acudientes con campos de firma digital
+   */
   private async dibujarFirmas(
     doc: jsPDF,
     datos: DatosContratoPDF,
     firmaBase64: string,
     yPos: number,
     pageWidth: number,
-    marginLeft: number
+    marginLeft: number,
+    configFirmas: any,
+    seccion: string
   ): Promise<number> {
     const firmaWidth = 70;
     const espacioEntreFirmas = 10;
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const currentPage = doc.getCurrentPageInfo().pageNumber;
 
-    // SIN verificación de espacio - siempre dibuja en la misma página
+    // Determinar si los acudientes firman digitalmente
+    const acudientesFirmaDigital = configFirmas?.acudientes?.map((a: any) => a.firmaDigital !== false) 
+      || datos.acudientes.map(() => true);
+    
+    // Determinar si el representante firma digitalmente
+    const representanteFirmaDigital = configFirmas?.representante?.firmaDigital === true;
+
     const numFirmas = datos.acudientes.length;
     const totalWidth = firmaWidth * Math.min(numFirmas, 2) + espacioEntreFirmas;
     let xPos = (pageWidth - totalWidth) / 2;
 
-    // Firmas de acudientes - ESPACIADO COMPACTO
+    // Firmas de acudientes - primera fila (máximo 2)
     datos.acudientes.slice(0, 2).forEach((acudiente, index) => {
       const x = xPos + index * (firmaWidth + espacioEntreFirmas);
+      const usarFirmaDigital = acudientesFirmaDigital[index] !== false;
+      const recipientIndex = index + 1; // 1-based index para Firma.dev
 
-      doc.setDrawColor('#666');
-      doc.setLineWidth(0.5);
-      doc.line(x, yPos + 12, x + firmaWidth, yPos + 12);
-
-      doc.setFontSize(8);
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor('#222');
-      doc.text(acudiente.nombre_completo || '', x + firmaWidth / 2, yPos + 17, {
-        align: 'center',
-      });
-
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(7);
-      doc.text(
-        `CC. ${acudiente.numero_identificacion}`,
-        x + firmaWidth / 2,
-        yPos + 21,
-        { align: 'center' }
-      );
-
-      doc.setTextColor('#666');
-      doc.setFontSize(7);
-      doc.text(
-        acudiente.tipo_acudiente || 'ACUDIENTE',
-        x + firmaWidth / 2,
-        yPos + 24,
-        { align: 'center' }
-      );
-      doc.setTextColor('#222');
+      if (usarFirmaDigital) {
+        // Dibujar campo de firma digital con recuadro visual
+        this.dibujarCampoFirmaDigital(
+          doc,
+          x,
+          yPos,
+          firmaWidth,
+          recipientIndex,
+          acudiente.nombre_completo || '',
+          acudiente.numero_identificacion || '',
+          acudiente.tipo_acudiente || 'ACUDIENTE',
+          currentPage,
+          pageWidth,
+          pageHeight,
+          seccion
+        );
+      } else {
+        // Dibujar firma tradicional
+        this.dibujarFirmaTradicional(
+          doc,
+          x,
+          yPos,
+          firmaWidth,
+          acudiente.nombre_completo || '',
+          acudiente.numero_identificacion || '',
+          acudiente.tipo_acudiente || 'ACUDIENTE'
+        );
+      }
     });
 
     yPos += 28;
@@ -754,39 +1053,36 @@ export class ExportarPdfContratoService {
       xPos = (pageWidth - totalWidth) / 2;
       datos.acudientes.slice(2, 4).forEach((acudiente, index) => {
         const x = xPos + index * (firmaWidth + espacioEntreFirmas);
+        const realIndex = index + 2;
+        const usarFirmaDigital = acudientesFirmaDigital[realIndex] !== false;
+        const recipientIndex = realIndex + 1; // 1-based index para Firma.dev
 
-        doc.setDrawColor('#666');
-        doc.setLineWidth(0.5);
-        doc.line(x, yPos + 12, x + firmaWidth, yPos + 12);
-
-        doc.setFontSize(8);
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor('#222');
-        doc.text(
-          acudiente.nombre_completo || '',
-          x + firmaWidth / 2,
-          yPos + 17,
-          { align: 'center' }
-        );
-
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(7);
-        doc.text(
-          `CC. ${acudiente.numero_identificacion}`,
-          x + firmaWidth / 2,
-          yPos + 21,
-          { align: 'center' }
-        );
-
-        doc.setTextColor('#666');
-        doc.setFontSize(7);
-        doc.text(
-          acudiente.tipo_acudiente || 'ACUDIENTE',
-          x + firmaWidth / 2,
-          yPos + 24,
-          { align: 'center' }
-        );
-        doc.setTextColor('#222');
+        if (usarFirmaDigital) {
+          this.dibujarCampoFirmaDigital(
+            doc,
+            x,
+            yPos,
+            firmaWidth,
+            recipientIndex,
+            acudiente.nombre_completo || '',
+            acudiente.numero_identificacion || '',
+            acudiente.tipo_acudiente || 'ACUDIENTE',
+            currentPage,
+            pageWidth,
+            pageHeight,
+            seccion
+          );
+        } else {
+          this.dibujarFirmaTradicional(
+            doc,
+            x,
+            yPos,
+            firmaWidth,
+            acudiente.nombre_completo || '',
+            acudiente.numero_identificacion || '',
+            acudiente.tipo_acudiente || 'ACUDIENTE'
+          );
+        }
       });
       yPos += 28;
     }
@@ -794,50 +1090,43 @@ export class ExportarPdfContratoService {
     // Firma del representante legal
     const xRepresentante = (pageWidth - firmaWidth) / 2;
 
-    if (firmaBase64) {
-      try {
-        doc.addImage(firmaBase64, 'PNG', xRepresentante + 10, yPos - 2, 50, 14);
-      } catch (error) {
-        console.warn('No se pudo insertar la firma:', error);
-      }
+    if (representanteFirmaDigital) {
+      // Representante firma digitalmente (recipient especial)
+      this.dibujarCampoFirmaDigital(
+        doc,
+        xRepresentante,
+        yPos,
+        firmaWidth,
+        99, // Índice especial para representante
+        datos.configuracion.representante_legal_nombre || '',
+        datos.configuracion.representante_legal_cedula || '',
+        'REPRESENTANTE LEGAL',
+        currentPage,
+        pageWidth,
+        pageHeight,
+        seccion
+      );
+    } else {
+      // Representante firma de forma tradicional (con imagen de firma)
+      this.dibujarFirmaTradicional(
+        doc,
+        xRepresentante,
+        yPos,
+        firmaWidth,
+        datos.configuracion.representante_legal_nombre || '',
+        datos.configuracion.representante_legal_cedula || '',
+        'REPRESENTANTE LEGAL',
+        firmaBase64
+      );
     }
 
-    doc.setDrawColor('#666');
-    doc.setLineWidth(0.5);
-    doc.line(xRepresentante, yPos + 12, xRepresentante + firmaWidth, yPos + 12);
-
-    doc.setFontSize(8);
-    doc.setFont('helvetica', 'bold');
     doc.setTextColor('#222');
-    doc.text(
-      datos.configuracion.representante_legal_nombre || '',
-      xRepresentante + firmaWidth / 2,
-      yPos + 17,
-      { align: 'center' }
-    );
-
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(7);
-    doc.text(
-      `CC. ${datos.configuracion.representante_legal_cedula || ''}`,
-      xRepresentante + firmaWidth / 2,
-      yPos + 21,
-      { align: 'center' }
-    );
-
-    doc.setTextColor('#666');
-    doc.setFontSize(7);
-    doc.text(
-      'REPRESENTANTE LEGAL',
-      xRepresentante + firmaWidth / 2,
-      yPos + 24,
-      { align: 'center' }
-    );
-    doc.setTextColor('#222');
-
     return yPos + 28;
   }
 
+  /**
+   * Dibuja sección de Autorización de Imágenes CON firma digital
+   */
   private async dibujarAutorizacionImagenes(
     doc: jsPDF,
     autorizacion: any,
@@ -847,8 +1136,12 @@ export class ExportarPdfContratoService {
     pageWidth: number,
     marginLeft: number,
     contentWidth: number,
-    primaryColor: string
+    primaryColor: string,
+    configFirmas: any
   ): Promise<number> {
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const currentPage = doc.getCurrentPageInfo().pageNumber;
+    
     doc.setFontSize(11);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor('#222');
@@ -879,236 +1172,131 @@ export class ExportarPdfContratoService {
 
     yPos += 10;
 
+    // FIRMAS CON CAMPO DE FIRMA DIGITAL
     const firmaWidth = 70;
     const espacioEntreFirmas = 10;
     const numFirmas = datos.acudientes.length;
     const totalWidth = firmaWidth * Math.min(numFirmas, 2) + espacioEntreFirmas;
     let xPos = (pageWidth - totalWidth) / 2;
 
+    // Determinar si los acudientes firman digitalmente
+    const acudientesFirmaDigital = configFirmas?.acudientes?.map((a: any) => a.firmaDigital !== false) 
+      || datos.acudientes.map(() => true);
+
+    // Primera fila de firmas
     datos.acudientes.slice(0, 2).forEach((acudiente, index) => {
       const x = xPos + index * (firmaWidth + espacioEntreFirmas);
+      const usarFirmaDigital = acudientesFirmaDigital[index] !== false;
+      const recipientIndex = index + 1;
 
-      doc.setDrawColor('#666');
-      doc.setLineWidth(0.5);
-      doc.line(x, yPos + 15, x + firmaWidth, yPos + 15);
-
-      doc.setFontSize(8);
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor('#222');
-      doc.text(acudiente.nombre_completo || '', x + firmaWidth / 2, yPos + 20, {
-        align: 'center',
-      });
-
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(7);
-      doc.text(
-        `CC. ${acudiente.numero_identificacion}`,
-        x + firmaWidth / 2,
-        yPos + 24,
-        { align: 'center' }
-      );
-
-      doc.setTextColor('#666');
-      doc.setFontSize(7);
-      doc.text(
-        acudiente.tipo_acudiente || 'ACUDIENTE',
-        x + firmaWidth / 2,
-        yPos + 28,
-        { align: 'center' }
-      );
-      doc.setTextColor('#222');
+      if (usarFirmaDigital) {
+        this.dibujarCampoFirmaDigital(
+          doc,
+          x,
+          yPos,
+          firmaWidth,
+          recipientIndex,
+          acudiente.nombre_completo || '',
+          acudiente.numero_identificacion || '',
+          acudiente.tipo_acudiente || 'ACUDIENTE',
+          currentPage,
+          pageWidth,
+          pageHeight,
+          'AUTORIZACION_IMAGENES'
+        );
+      } else {
+        this.dibujarFirmaTradicional(
+          doc,
+          x,
+          yPos,
+          firmaWidth,
+          acudiente.nombre_completo || '',
+          acudiente.numero_identificacion || '',
+          acudiente.tipo_acudiente || 'ACUDIENTE'
+        );
+      }
     });
 
-    return yPos + 35;
+    yPos += 28;
+
+    // Segunda fila si hay más de 2 acudientes
+    if (numFirmas > 2) {
+      datos.acudientes.slice(2, 4).forEach((acudiente, index) => {
+        const x = xPos + index * (firmaWidth + espacioEntreFirmas);
+        const realIndex = index + 2;
+        const usarFirmaDigital = acudientesFirmaDigital[realIndex] !== false;
+        const recipientIndex = realIndex + 1;
+
+        if (usarFirmaDigital) {
+          this.dibujarCampoFirmaDigital(
+            doc,
+            x,
+            yPos,
+            firmaWidth,
+            recipientIndex,
+            acudiente.nombre_completo || '',
+            acudiente.numero_identificacion || '',
+            acudiente.tipo_acudiente || 'ACUDIENTE',
+            currentPage,
+            pageWidth,
+            pageHeight,
+            'AUTORIZACION_IMAGENES'
+          );
+        } else {
+          this.dibujarFirmaTradicional(
+            doc,
+            x,
+            yPos,
+            firmaWidth,
+            acudiente.nombre_completo || '',
+            acudiente.numero_identificacion || '',
+            acudiente.tipo_acudiente || 'ACUDIENTE'
+          );
+        }
+      });
+      yPos += 28;
+    }
+
+    return yPos + 7;
   }
 
   private dibujarPiePagina(
     doc: jsPDF,
-    numeroPagina: number,
-    totalPaginas: number,
+    currentPage: number,
+    totalPages: number,
     pageWidth: number,
     pageHeight: number,
     grayColor: string,
     config: any
   ): void {
-    const yPos = pageHeight - 15;
-
     doc.setFontSize(8);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(grayColor);
 
-    doc.text(`Página ${numeroPagina} de ${totalPaginas}`, pageWidth / 2, yPos, {
-      align: 'center',
-    });
-
-    const textoContacto = `${config.institucion_telefono || ''} | ${
-      config.institucion_email || ''
-    } | ${config.institucion_web || ''}`;
-    doc.text(textoContacto, pageWidth / 2, yPos + 4, { align: 'center' });
-
-    doc.text(config.institucion_direccion || '', pageWidth / 2, yPos + 8, {
-      align: 'center',
-    });
-  }
-
-  private formatearMoneda(valor: number): string {
-    return new Intl.NumberFormat('es-CO', {
-      style: 'currency',
-      currency: 'COP',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    })
-      .format(valor)
-      .replace('COP', '')
-      .trim();
-  }
-
-  private formatearFechaLarga(fechaStr: string): string {
-    const [fecha] = fechaStr.split('T');
-    const [anio, mes, dia] = fecha.split('-');
-
-    const meses = [
-      'enero',
-      'febrero',
-      'marzo',
-      'abril',
-      'mayo',
-      'junio',
-      'julio',
-      'agosto',
-      'septiembre',
-      'octubre',
-      'noviembre',
-      'diciembre',
-    ];
-
-    return `${parseInt(dia)} del mes de ${
-      meses[parseInt(mes) - 1]
-    } del año ${anio}`;
-  }
-
-  private formatearFechaTexto(fechaStr: string | null | undefined): string {
-    if (!fechaStr) {
-      const ahora = new Date();
-      const anioSiguiente = ahora.getFullYear() + 1;
-      return `30 de noviembre del año ${anioSiguiente}`;
-    }
-
-    try {
-      const [fecha] = fechaStr.split('T');
-      const [anio, mes, dia] = fecha.split('-');
-
-      const diaNum = parseInt(dia);
-      const mesNum = parseInt(mes);
-      const anioNum = parseInt(anio);
-
-      if (isNaN(diaNum) || isNaN(mesNum) || isNaN(anioNum)) {
-        throw new Error('Fecha inválida');
-      }
-
-      return `${dia} de ${this.obtenerNombreMes(mesNum)} del año ${anio}`;
-    } catch (error) {
-      console.warn('Error formateando fecha:', fechaStr, error);
-      const ahora = new Date();
-      const anioSiguiente = ahora.getFullYear() + 1;
-      return `30 de noviembre del año ${anioSiguiente}`;
-    }
-  }
-
-  private obtenerMesInicio(fechaStr: string): string {
-    if (!fechaStr) return 'enero';
-    const [fecha] = fechaStr.split('T');
-    const [, mes] = fecha.split('-');
-    return this.obtenerNombreMes(parseInt(mes));
-  }
-
-  private obtenerNombreMes(mes: number): string {
-    const meses = [
-      'enero',
-      'febrero',
-      'marzo',
-      'abril',
-      'mayo',
-      'junio',
-      'julio',
-      'agosto',
-      'septiembre',
-      'octubre',
-      'noviembre',
-      'diciembre',
-    ];
-    return meses[mes - 1] || 'enero';
-  }
-
-  private numeroATexto(num: number): string {
-    const textos = [
-      '',
-      'primera',
-      'segunda',
-      'tercera',
-      'cuarta',
-      'quinta',
-      'sexta',
-      'séptima',
-      'octava',
-      'novena',
-      'décima',
-      'décima primera',
-      'décima segunda',
-      'décima tercera',
-      'décima cuarta',
-    ];
-    return textos[num] || num.toString();
-  }
-
-  private generarNumeroContrato(
-    idContrato: number,
-    anio: number,
-    prefijo: string = 'C'
-  ): string {
-    const añoCorto = anio.toString().slice(-2);
-    const idFormateado = idContrato.toString().padStart(5, '0');
-    return `${prefijo}LL${añoCorto}-${idFormateado}`;
-  }
-
-  private dibujarFirmaPagare(
-    doc: jsPDF,
-    acudiente: any,
-    xPos: number,
-    yPos: number,
-    firmaWidth: number
-  ): void {
-    doc.setDrawColor('#666');
-    doc.setLineWidth(0.5);
-    doc.line(xPos, yPos + 15, xPos + firmaWidth, yPos + 15);
-
-    doc.setFontSize(8);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor('#222');
     doc.text(
-      acudiente.nombre_completo || '',
-      xPos + firmaWidth / 2,
-      yPos + 20,
+      `Pagina ${currentPage} de ${totalPages}`,
+      pageWidth / 2,
+      pageHeight - 10,
       { align: 'center' }
     );
 
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(7);
     doc.text(
-      `CC. ${acudiente.numero_identificacion}`,
-      xPos + firmaWidth / 2,
-      yPos + 24,
-      { align: 'center' }
+      config.institucion_nombre || this.institucionConfigService.getNombreInstitucion(),
+      20,
+      pageHeight - 10
     );
 
-    doc.setTextColor('#666');
-    doc.setFontSize(7);
-    doc.text('DEUDOR SOLIDARIO', xPos + firmaWidth / 2, yPos + 28, {
-      align: 'center',
-    });
-    doc.setTextColor('#222');
+    doc.text(
+      config.institucion_telefono || 'Tel: 861 1636',
+      pageWidth - 20,
+      pageHeight - 10,
+      { align: 'right' }
+    );
   }
 
+  /**
+   * Dibuja Carta de Instrucciones CON firma digital
+   */
   private async dibujarCartaInstrucciones(
     doc: jsPDF,
     cartaInstrucciones: any,
@@ -1118,10 +1306,13 @@ export class ExportarPdfContratoService {
     marginLeft: number,
     contentWidth: number,
     primaryColor: string,
-    goldColor: string
+    goldColor: string,
+    configFirmas: any
   ): Promise<number> {
     doc.addPage();
     let yPos = 15;
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const currentPage = doc.getCurrentPageInfo().pageNumber;
 
     yPos = this.dibujarEncabezado(
       doc,
@@ -1140,8 +1331,7 @@ export class ExportarPdfContratoService {
     });
     yPos += 8;
 
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
     doc.text(cartaInstrucciones.numero_pagare, pageWidth / 2, yPos, {
       align: 'center',
     });
@@ -1223,39 +1413,102 @@ export class ExportarPdfContratoService {
     doc.text(cartaInstrucciones.pie_firma, marginLeft, yPos);
     yPos += 10;
 
+    // FIRMAS CON CAMPO DE FIRMA DIGITAL
     const firmaWidth = 70;
     const espacioEntreFirmas = 10;
     const numFirmas = datos.acudientes.length;
+    const totalWidth = firmaWidth * Math.min(numFirmas, 2) + espacioEntreFirmas;
+    let xPos = (pageWidth - totalWidth) / 2;
+
+    // Determinar si los acudientes firman digitalmente
+    const acudientesFirmaDigital = configFirmas?.acudientes?.map((a: any) => a.firmaDigital !== false) 
+      || datos.acudientes.map(() => true);
 
     if (numFirmas === 1) {
-      const xPos = (pageWidth - firmaWidth) / 2;
-      this.dibujarFirmaPagare(doc, datos.acudientes[0], xPos, yPos, firmaWidth);
+      xPos = (pageWidth - firmaWidth) / 2;
+      const usarFirmaDigital = acudientesFirmaDigital[0] !== false;
+      
+      if (usarFirmaDigital) {
+        this.dibujarCampoFirmaDigital(
+          doc,
+          xPos,
+          yPos,
+          firmaWidth,
+          1,
+          datos.acudientes[0].nombre_completo || '',
+          datos.acudientes[0].numero_identificacion || '',
+          datos.acudientes[0].tipo_acudiente || 'ACUDIENTE',
+          currentPage,
+          pageWidth,
+          pageHeight,
+          'CARTA_INSTRUCCIONES'
+        );
+      } else {
+        this.dibujarFirmaPagare(doc, datos.acudientes[0], xPos, yPos, firmaWidth);
+      }
     } else if (numFirmas === 2) {
-      const totalWidth = firmaWidth * 2 + espacioEntreFirmas;
-      let xPos = (pageWidth - totalWidth) / 2;
-
       datos.acudientes.forEach((acudiente, index) => {
         const x = xPos + index * (firmaWidth + espacioEntreFirmas);
-        this.dibujarFirmaPagare(doc, acudiente, x, yPos, firmaWidth);
+        const usarFirmaDigital = acudientesFirmaDigital[index] !== false;
+        const recipientIndex = index + 1;
+
+        if (usarFirmaDigital) {
+          this.dibujarCampoFirmaDigital(
+            doc,
+            x,
+            yPos,
+            firmaWidth,
+            recipientIndex,
+            acudiente.nombre_completo || '',
+            acudiente.numero_identificacion || '',
+            acudiente.tipo_acudiente || 'ACUDIENTE',
+            currentPage,
+            pageWidth,
+            pageHeight,
+            'CARTA_INSTRUCCIONES'
+          );
+        } else {
+          this.dibujarFirmaPagare(doc, acudiente, x, yPos, firmaWidth);
+        }
       });
     } else {
+      // Más de 2 firmas
       const firmasPorFila = 2;
-      const totalWidth = firmaWidth * firmasPorFila + espacioEntreFirmas;
-      let xPos = (pageWidth - totalWidth) / 2;
-
       datos.acudientes.forEach((acudiente, index) => {
         const fila = Math.floor(index / firmasPorFila);
         const columna = index % firmasPorFila;
         const x = xPos + columna * (firmaWidth + espacioEntreFirmas);
         const y = yPos + fila * 30;
+        const usarFirmaDigital = acudientesFirmaDigital[index] !== false;
+        const recipientIndex = index + 1;
 
-        this.dibujarFirmaPagare(doc, acudiente, x, y, firmaWidth);
+        if (usarFirmaDigital) {
+          this.dibujarCampoFirmaDigital(
+            doc,
+            x,
+            y,
+            firmaWidth,
+            recipientIndex,
+            acudiente.nombre_completo || '',
+            acudiente.numero_identificacion || '',
+            acudiente.tipo_acudiente || 'ACUDIENTE',
+            currentPage,
+            pageWidth,
+            pageHeight,
+            'CARTA_INSTRUCCIONES'
+          );
+        } else {
+          this.dibujarFirmaPagare(doc, acudiente, x, y, firmaWidth);
+        }
       });
     }
 
     return yPos;
   }
 
+  /**
+   * Dibuja Pagaré Ejecutivo CON firma digital
+   */
   private async dibujarPagareEjecutivo(
     doc: jsPDF,
     pagare: any,
@@ -1265,10 +1518,13 @@ export class ExportarPdfContratoService {
     marginLeft: number,
     contentWidth: number,
     primaryColor: string,
-    goldColor: string
+    goldColor: string,
+    configFirmas: any
   ): Promise<number> {
     doc.addPage();
     let yPos = 15;
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const currentPage = doc.getCurrentPageInfo().pageNumber;
 
     yPos = this.dibujarEncabezado(
       doc,
@@ -1352,36 +1608,221 @@ export class ExportarPdfContratoService {
     doc.text(pagare.pie_firma, marginLeft, yPos);
     yPos += 10;
 
+    // FIRMAS CON CAMPO DE FIRMA DIGITAL
     const firmaWidth = 70;
     const espacioEntreFirmas = 10;
     const numFirmas = datos.acudientes.length;
+    const totalWidth = firmaWidth * Math.min(numFirmas, 2) + espacioEntreFirmas;
+    let xPos = (pageWidth - totalWidth) / 2;
+
+    // Determinar si los acudientes firman digitalmente
+    const acudientesFirmaDigital = configFirmas?.acudientes?.map((a: any) => a.firmaDigital !== false) 
+      || datos.acudientes.map(() => true);
 
     if (numFirmas === 1) {
-      const xPos = (pageWidth - firmaWidth) / 2;
-      this.dibujarFirmaPagare(doc, datos.acudientes[0], xPos, yPos, firmaWidth);
+      xPos = (pageWidth - firmaWidth) / 2;
+      const usarFirmaDigital = acudientesFirmaDigital[0] !== false;
+      
+      if (usarFirmaDigital) {
+        this.dibujarCampoFirmaDigital(
+          doc,
+          xPos,
+          yPos,
+          firmaWidth,
+          1,
+          datos.acudientes[0].nombre_completo || '',
+          datos.acudientes[0].numero_identificacion || '',
+          datos.acudientes[0].tipo_acudiente || 'ACUDIENTE',
+          currentPage,
+          pageWidth,
+          pageHeight,
+          'PAGARE'
+        );
+      } else {
+        this.dibujarFirmaPagare(doc, datos.acudientes[0], xPos, yPos, firmaWidth);
+      }
     } else if (numFirmas === 2) {
-      const totalWidth = firmaWidth * 2 + espacioEntreFirmas;
-      let xPos = (pageWidth - totalWidth) / 2;
-
       datos.acudientes.forEach((acudiente, index) => {
         const x = xPos + index * (firmaWidth + espacioEntreFirmas);
-        this.dibujarFirmaPagare(doc, acudiente, x, yPos, firmaWidth);
+        const usarFirmaDigital = acudientesFirmaDigital[index] !== false;
+        const recipientIndex = index + 1;
+
+        if (usarFirmaDigital) {
+          this.dibujarCampoFirmaDigital(
+            doc,
+            x,
+            yPos,
+            firmaWidth,
+            recipientIndex,
+            acudiente.nombre_completo || '',
+            acudiente.numero_identificacion || '',
+            acudiente.tipo_acudiente || 'ACUDIENTE',
+            currentPage,
+            pageWidth,
+            pageHeight,
+            'PAGARE'
+          );
+        } else {
+          this.dibujarFirmaPagare(doc, acudiente, x, yPos, firmaWidth);
+        }
       });
     } else {
       const firmasPorFila = 2;
-      const totalWidth = firmaWidth * firmasPorFila + espacioEntreFirmas;
-      let xPos = (pageWidth - totalWidth) / 2;
-
       datos.acudientes.forEach((acudiente, index) => {
         const fila = Math.floor(index / firmasPorFila);
         const columna = index % firmasPorFila;
         const x = xPos + columna * (firmaWidth + espacioEntreFirmas);
         const y = yPos + fila * 30;
+        const usarFirmaDigital = acudientesFirmaDigital[index] !== false;
+        const recipientIndex = index + 1;
 
-        this.dibujarFirmaPagare(doc, acudiente, x, y, firmaWidth);
+        if (usarFirmaDigital) {
+          this.dibujarCampoFirmaDigital(
+            doc,
+            x,
+            y,
+            firmaWidth,
+            recipientIndex,
+            acudiente.nombre_completo || '',
+            acudiente.numero_identificacion || '',
+            acudiente.tipo_acudiente || 'ACUDIENTE',
+            currentPage,
+            pageWidth,
+            pageHeight,
+            'PAGARE'
+          );
+        } else {
+          this.dibujarFirmaPagare(doc, acudiente, x, y, firmaWidth);
+        }
       });
     }
 
     return yPos;
+  }
+
+  private dibujarFirmaPagare(
+    doc: jsPDF,
+    acudiente: any,
+    x: number,
+    y: number,
+    width: number
+  ): void {
+    doc.setDrawColor('#666');
+    doc.setLineWidth(0.5);
+    doc.line(x, y + 15, x + width, y + 15);
+
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor('#222');
+    doc.text(acudiente.nombre_completo || '', x + width / 2, y + 20, {
+      align: 'center',
+    });
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7);
+    doc.text(`CC. ${acudiente.numero_identificacion}`, x + width / 2, y + 24, {
+      align: 'center',
+    });
+
+    doc.setTextColor('#666');
+    doc.setFontSize(7);
+    doc.text(
+      acudiente.tipo_acudiente || 'ACUDIENTE',
+      x + width / 2,
+      y + 28,
+      { align: 'center' }
+    );
+    doc.setTextColor('#222');
+  }
+
+  // Métodos para cargar recursos
+  private async cargarLogoBase64(): Promise<string> {
+    try {
+      const logoUrl = this.institucionConfigService.getLogoUrl();
+      const response = await fetch(logoUrl);
+      const blob = await response.blob();
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+    } catch (error) {
+      console.error('Error al cargar logo:', error);
+      return '';
+    }
+  }
+
+  private async cargarFirmaBase64(): Promise<string> {
+    try {
+      // La firma está guardada en configuracion_global como base64
+      const response: any = await firstValueFrom(
+        this.configuracionGlobalService.obtenerByClave('representante_legal_firma_base64')
+      );
+      
+      if (response && response.body && response.body.valor_texto) {
+        return response.body.valor_texto;
+      }
+      
+      return '';
+    } catch (error) {
+      console.error('Error al cargar firma:', error);
+      return '';
+    }
+  }
+
+  // Métodos de utilidad
+  private formatearMoneda(valor: number): string {
+    return valor?.toLocaleString('es-CO') || '0';
+  }
+
+  private formatearFechaTexto(fechaStr: string): string {
+    if (!fechaStr) return '';
+    const fecha = new Date(fechaStr + 'T00:00:00');
+    return fecha.toLocaleDateString('es-CO');
+  }
+
+  private formatearFechaLarga(fechaStr: string): string {
+    if (!fechaStr) return '';
+    const fecha = new Date(fechaStr + 'T00:00:00');
+    const opciones: Intl.DateTimeFormatOptions = {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    };
+    return fecha.toLocaleDateString('es-CO', opciones);
+  }
+
+  private obtenerMesInicio(fechaStr: string): string {
+    if (!fechaStr) return '';
+    const fecha = new Date(fechaStr + 'T00:00:00');
+    return fecha.toLocaleDateString('es-CO', { month: 'long' });
+  }
+
+  private generarNumeroContrato(id: string, anio: number, prefijo: string): string {
+    return `${prefijo}-${anio}-${String(id).padStart(5, '0')}`;
+  }
+
+  private numeroATexto(numero: number): string {
+    const numeros = [
+      '',
+      'PRIMERA',
+      'SEGUNDA',
+      'TERCERA',
+      'CUARTA',
+      'QUINTA',
+      'SEXTA',
+      'SEPTIMA',
+      'OCTAVA',
+      'NOVENA',
+      'DECIMA',
+      'UNDECIMA',
+      'DUODECIMA',
+      'DECIMOTERCERA',
+      'DECIMOCUARTA',
+      'DECIMOQUINTA',
+      'DECIMOSEXTA',
+    ];
+    return numeros[numero] || numero.toString();
   }
 }

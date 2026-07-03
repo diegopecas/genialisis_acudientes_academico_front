@@ -1,8 +1,9 @@
 import { CommonModule } from '@angular/common';
 import { Component, Input, OnChanges, SimpleChanges, OnInit } from '@angular/core';
-import { RouterModule } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { InstitucionConfigService } from '../../services/institucion-config.service';
 import { AyudaModalService } from '../../services/ayuda-modal.service';
+import { AccesosRapidosService } from '../../services/accesos-rapidos.service';
 
 @Component({
   selector: 'app-header',
@@ -28,30 +29,80 @@ export class HeaderComponent implements OnChanges, OnInit {
   iconoCrear = false;
   icono = '';
 
-  // Iconos simples de botones
   public createIcon = '+';
   public backIcon = '←';
 
-  // Configuración de la institución
   public logoGenialisis = '/assets/images/logo_app.png';
   public nombreJardin = '';
 
+  public esTrackeable = false;
+  public esFijado = false;
+  private accesoId: string | null = null;
+  private rutaActual = '';
+  private labelAcceso = '';
+  private iconoAcceso = '';
+
   constructor(
+    private router: Router,
     private institucionConfigService: InstitucionConfigService,
-    private ayudaModalService: AyudaModalService
+    private ayudaModalService: AyudaModalService,
+    private accesosRapidosService: AccesosRapidosService
   ) {}
 
   ngOnInit(): void {
     this.nombreJardin = this.institucionConfigService.getNombreInstitucion();
+    this.verificarRutaTrackeable();
   }
 
   abrirAyuda(): void {
     this.ayudaModalService.abrir();
   }
 
-  /**
-   * Capitaliza la primera letra de cada palabra
-   */
+  togglePin(): void {
+    if (this.accesoId) {
+      const nuevoEstado = this.esFijado ? 0 : 1;
+      this.accesosRapidosService.toggleFijo(this.accesoId, nuevoEstado).subscribe({
+        next: () => {
+          this.esFijado = !this.esFijado;
+        }
+      });
+    } else {
+      this.accesosRapidosService.fijarNuevo(this.rutaActual, this.labelAcceso, this.iconoAcceso).subscribe({
+        next: (response: any) => {
+          if (response.id) {
+            this.accesoId = response.id;
+          }
+          this.esFijado = true;
+        }
+      });
+    }
+  }
+
+  private verificarRutaTrackeable(): void {
+    const url = this.router.url;
+    const rutaLimpia = url.startsWith('/') ? url.substring(1) : url;
+    this.rutaActual = rutaLimpia.split('?')[0];
+
+    const rutasConfig = this.router.config;
+    for (const ruta of rutasConfig) {
+      if (ruta.path === this.rutaActual && ruta.data?.['trackear']) {
+        this.esTrackeable = true;
+        this.labelAcceso = ruta.data['labelAcceso'] || this.rutaActual;
+        this.iconoAcceso = ruta.data['iconoAcceso'] || '📌';
+        this.consultarEstadoFijado();
+        break;
+      }
+    }
+  }
+
+  private consultarEstadoFijado(): void {
+    const acceso = this.accesosRapidosService.getAccesoByRuta(this.rutaActual);
+    if (acceso) {
+      this.accesoId = acceso.id;
+      this.esFijado = acceso.es_fijo === 1;
+    }
+  }
+
   capitalizarTitulo(texto: string): string {
     if (!texto) return '';
     return texto

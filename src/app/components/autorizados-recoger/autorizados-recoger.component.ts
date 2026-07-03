@@ -35,14 +35,14 @@ export class AutorizadosRecogerComponent implements OnInit {
   acudientesAutorizados: any[] = [];
   tiposAutorizacion: any[] = [];
   tiposIdentificacion: any[] = [];
-  idPersonaActual: number = 0;
+  idPersonaActual: string = '';
   cargando = false;
   guardado = false;
   vistaActual: 'estudiantes' | 'autorizados' | 'formulario' | 'detalle' = 'estudiantes';
 
   // Formulario crear
   model = {
-    idPersona: 0,
+    idPersona: '',
     tipoIdentificacion: '',
     numeroIdentificacion: '',
     primerNombre: '',
@@ -193,7 +193,7 @@ export class AutorizadosRecogerComponent implements OnInit {
       next: (response: any) => {
         if (response.body && response.body.length > 0) {
           const persona = response.body[0];
-          this.model.idPersona = +persona.id;
+          this.model.idPersona = persona.id;
           this.model.primerNombre = persona.primer_nombre || '';
           this.model.segundoNombre = persona.segundo_nombre || '';
           this.model.primerApellido = persona.primer_apellido || '';
@@ -211,7 +211,7 @@ export class AutorizadosRecogerComponent implements OnInit {
         } else {
           this.documentoEncontrado = false;
           this.camposHabilitados = true;
-          this.model.idPersona = 0;
+          this.model.idPersona = '';
           Swal.fire({
             icon: 'info',
             title: 'Persona nueva',
@@ -240,7 +240,7 @@ export class AutorizadosRecogerComponent implements OnInit {
       return;
     }
 
-    if (this.model.idPersona > 0) {
+    if (this.model.idPersona) {
       this.verificarYCrearAutorizado();
     } else {
       this.crearPersonaYAutorizado();
@@ -264,11 +264,11 @@ export class AutorizadosRecogerComponent implements OnInit {
       next: (response: any) => {
         console.log('persona creada', response);
         const idPersona = response?.id || response?.body?.id;
-        if (!idPersona || +idPersona === 0) {
+        if (!idPersona) {
           Swal.fire('Error', 'No se pudo crear la persona', 'error');
           return;
         }
-        this.model.idPersona = +idPersona;
+        this.model.idPersona = idPersona;
         this.crearAutorizado();
       },
       error: (error: any) => {
@@ -346,7 +346,7 @@ export class AutorizadosRecogerComponent implements OnInit {
     this.cargarDatosPersonaEditar(autorizado.id_persona, autorizado);
   }
 
-  private cargarDatosPersonaEditar(idPersona: number, autorizado: any): void {
+  private cargarDatosPersonaEditar(idPersona: string, autorizado: any): void {
     this.personasService.obtenerById(idPersona).subscribe({
       next: (response: any) => {
         const persona = response.body ? response.body[0] : null;
@@ -500,7 +500,7 @@ export class AutorizadosRecogerComponent implements OnInit {
 
   private limpiarFormulario(): void {
     this.model = {
-      idPersona: 0,
+      idPersona: '',
       tipoIdentificacion: '',
       numeroIdentificacion: '',
       primerNombre: '',

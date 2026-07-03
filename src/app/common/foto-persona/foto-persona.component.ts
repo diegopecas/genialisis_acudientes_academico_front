@@ -11,7 +11,7 @@ import { PersonasService } from '../../services/personas.service';
   imports: [CommonModule],
 })
 export class FotoPersonaComponent implements OnInit, OnDestroy {
-  @Input() idPersona!: number;
+  @Input() idPersona!: string;
   @Input() nombrePersona?: string;
   @Input() soloLectura = false;
   @Input() fotoActual?: string;
@@ -26,6 +26,9 @@ export class FotoPersonaComponent implements OnInit, OnDestroy {
   public archivoSeleccionado?: File;
   public previewUrl?: string;
   
+  // Lightbox
+  public mostrarLightbox = false;
+
   // Cámara
   public modoCamara = false;
   public camaraActiva = false;
@@ -185,6 +188,15 @@ export class FotoPersonaComponent implements OnInit, OnDestroy {
       return (nombres[0][0] + nombres[1][0]).toUpperCase();
     }
     return nombres[0][0].toUpperCase();
+  }
+
+  // LIGHTBOX
+  abrirLightbox() {
+    this.mostrarLightbox = true;
+  }
+
+  cerrarLightbox() {
+    this.mostrarLightbox = false;
   }
 
   // MÉTODOS DE CÁMARA

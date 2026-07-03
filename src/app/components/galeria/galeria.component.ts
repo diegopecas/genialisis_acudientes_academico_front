@@ -17,7 +17,7 @@ declare var AOS: any;
 // =========================================
 
 interface GalleryImage {
-  id: number;
+  id: string;
   guid: string;
   url: string;
   urlMedium: string;
@@ -27,14 +27,14 @@ interface GalleryImage {
 }
 
 interface Subgaleria {
-  id: number;
+  id: string;
   nombre: string;
   orden: number;
   images: GalleryImage[];
 }
 
 interface Galeria {
-  id: number;
+  id: string;
   nombre: string;
   descripcion: string;
   thumbnail: string;
@@ -50,7 +50,7 @@ interface Tab {
   id: string;
   nombre: string;
   isGenerales: boolean;
-  subgaleriaId?: number;
+  subgaleriaId?: string;
 }
 
 @Component({
@@ -62,8 +62,8 @@ interface Tab {
 })
 export class GaleriaComponent implements OnInit, OnDestroy {
   // Usuario
-  private idPersona: number | null = null;
-  private idDocente: number = 0;
+  private idPersona: string | null = null;
+  private idDocente: string = '0';
 
   // Galerías
   public galerias: Galeria[] = [];
@@ -259,7 +259,7 @@ export class GaleriaComponent implements OnInit, OnDestroy {
     }
 
     this.idPersona = usuario.id_persona;
-    this.idDocente = usuario.id_docente ? Number(usuario.id_docente) : 0;
+    this.idDocente = usuario.id_docente ? usuario.id_docente : '0';
     this.loadGalerias();
   }
 
@@ -640,7 +640,7 @@ export class GaleriaComponent implements OnInit, OnDestroy {
     console.log('Usuario hizo clic en Instagram desde la galería');
   }
 
-  trackByGaleriaId(index: number, galeria: Galeria): number {
+  trackByGaleriaId(index: number, galeria: Galeria): string {
     return galeria.id;
   }
 

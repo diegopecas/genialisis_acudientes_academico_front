@@ -4,7 +4,7 @@
  */
 
 export interface GalleryImage {
-  id: number;
+  id: string;
   guid: string;
   url: string;
   urlMedium: string;

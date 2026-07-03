@@ -31,8 +31,8 @@ export class ReportesPagoComponent implements OnInit {
   reportes: any[] = [];
   tiposPago: any[] = [];
   colaboradores: any[] = [];
-  idPersonaActual: number = 0;
-  idReporteCreado: number = 0;
+  idPersonaActual: string = '';
+  idReporteCreado: string = '';
   cargando = false;
   guardado = false;
   vistaActual: 'estudiantes' | 'reportes' | 'formulario' | 'detalle' = 'estudiantes';
@@ -191,7 +191,7 @@ export class ReportesPagoComponent implements OnInit {
       if (result.isConfirmed) {
         this.reportesPagoService.crear(data).subscribe({
           next: (response: any) => {
-            this.idReporteCreado = response?.id || 0;
+            this.idReporteCreado = response?.id || '';
             this.guardado = true;
           },
           error: (error: any) => {
@@ -271,7 +271,7 @@ export class ReportesPagoComponent implements OnInit {
   // Documento subido desde app-documentos-persona
   onDocumentoSubido(evento: any): void {
     if (evento.eliminado) return;
-    if (!this.idReporteCreado || this.idReporteCreado <= 0) return;
+    if (!this.idReporteCreado) return;
 
     const idDocumento = evento.id_documento;
     if (!idDocumento) return;
@@ -347,6 +347,6 @@ export class ReportesPagoComponent implements OnInit {
     };
     this.submitted = false;
     this.guardado = false;
-    this.idReporteCreado = 0;
+    this.idReporteCreado = '';
   }
 }

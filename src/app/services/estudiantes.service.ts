@@ -1,6 +1,7 @@
 import {
   HttpClient,
   HttpErrorResponse,
+  HttpParams,
   HttpResponse,
 } from '@angular/common/http';
 import { Injectable } from '@angular/core';
@@ -68,6 +69,52 @@ export class EstudiantesService {
       );
   }
 
+  // Listado filtrado del módulo. Solo se envían los filtros con valor; sin filtros trae todos.
+  obtenerPorFiltros(filtros: { id_grupo?: any; estado?: any; permanente?: any; nombre?: any }) {
+    let params = new HttpParams();
+
+    if (filtros.id_grupo) {
+      params = params.set('id_grupo', filtros.id_grupo);
+    }
+    if (filtros.estado) {
+      params = params.set('estado', filtros.estado);
+    }
+    if (filtros.permanente !== undefined && filtros.permanente !== null && filtros.permanente !== '') {
+      params = params.set('permanente', filtros.permanente);
+    }
+    if (filtros.nombre) {
+      params = params.set('nombre', filtros.nombre);
+    }
+
+    return this.http
+      .get<HttpResponse<Object>>(this.servicioXgrupo + '-filtros', { observe: 'response', params })
+      .pipe(
+        tap((response: HttpResponse<Object>) => {
+          let respuesta: any = response.body;
+          if (respuesta.error) {
+            throw respuesta.error;
+          }
+          return response;
+        }),
+        catchError(this.handleError)
+      );
+  }
+
+  obtenerActivos() {
+    return this.http
+      .get<HttpResponse<Object>>(this.servicioXgrupo + '-activos', { observe: 'response' })
+      .pipe(
+        tap((response: HttpResponse<Object>) => {
+          let respuesta: any = response.body;
+          if (respuesta.error) {
+            throw respuesta.error;
+          }
+          return response;
+        }),
+        catchError(this.handleError)
+      );
+  }
+
   obtenerGrupoByEstudiante(idEstudiante: any) {
     return this.http
       .get<HttpResponse<Object>>(this.servicioXgrupo + '/estudiante/' + idEstudiante, { observe: 'response' })
@@ -84,7 +131,12 @@ export class EstudiantesService {
   }
 
   activarEstudianteGrupo(idEstudiante: any, idGrupo: any, anio: any, idGrado: any = null) {
-    const body = JSON.stringify({ anio: anio, id_estudiante: idEstudiante, id_grupo: idGrupo, id_grado: idGrado });
+    const body = JSON.stringify({
+      anio: anio,
+      id_estudiante: idEstudiante,
+      id_grupo: idGrupo,
+      id_grado: idGrado ? idGrado : null
+    });
 
     return this.http.post<any>(this.servicioXgrupo, body, httpOptions).pipe(
       tap((respuesta: any) => {
@@ -159,6 +211,21 @@ export class EstudiantesService {
   obtenerReporteCompleto() {
     return this.http
       .get<HttpResponse<Object>>(this.servicio + '-reporte-completo', { observe: 'response' })
+      .pipe(
+        tap((response: HttpResponse<Object>) => {
+          let respuesta: any = response.body;
+          if (respuesta.error) {
+            throw respuesta.error;
+          }
+          return response;
+        }),
+        catchError(this.handleError)
+      );
+  }
+
+  obtenerReporteRecordatorios() {
+    return this.http
+      .get<HttpResponse<Object>>(this.servicio + '-reporte-recordatorios', { observe: 'response' })
       .pipe(
         tap((response: HttpResponse<Object>) => {
           let respuesta: any = response.body;

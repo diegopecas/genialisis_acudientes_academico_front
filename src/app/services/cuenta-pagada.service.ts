@@ -131,6 +131,25 @@ export class CuentaPagadaService {
         catchError(this.handleError)
       );
   }
+
+  crearEnLote(idPagoRecibido: string, cuentas: any[]) {
+    const body = JSON.stringify({
+      id_pago_recibido: idPagoRecibido,
+      cuentas: cuentas
+    });
+
+    return this.http.post<any>(this.servicio + '/batch', body, httpOptions).pipe(
+      tap((respuesta: any) => {
+        if (respuesta.error) {
+          console.error('Error en lote:', respuesta);
+          throw respuesta.error;
+        }
+        console.log('Resultado del lote:', respuesta);
+        return respuesta;
+      }),
+      catchError(this.handleError)
+    );
+  }
   private handleError(error: HttpErrorResponse) {
     return throwError(() => error);
   }

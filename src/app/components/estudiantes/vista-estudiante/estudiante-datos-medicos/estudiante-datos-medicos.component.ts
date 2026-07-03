@@ -6,11 +6,11 @@ import { DatosMedicosService } from '../../../../services/datos-medicos.service'
 import { DatosMedicosXEstudianteService } from '../../../../services/datos-medicos-x-estudiante.service';
 
 interface DatoDinamicoVista {
-  id_dato: number;
+  id_dato: string;
   nombre: string;
   nombre_tipo: string;
   icono_tipo: string;
-  id_tipo: number;
+  id_tipo: string;
   es_numero: boolean;
   es_texto: boolean;
   es_parrafo: boolean;
@@ -27,7 +27,7 @@ interface DatoDinamicoVista {
 interface GrupoVista {
   nombre_tipo: string;
   icono: string;
-  id_tipo: number;
+  id_tipo: string;
   orden_tipo: number;
   datos: DatoDinamicoVista[];
 }
@@ -90,16 +90,16 @@ export class EstudianteDatosMedicosComponent implements OnInit {
   }
 
   construirGrupos(catalogo: any[], valores: any[], soloConValor: boolean): GrupoVista[] {
-    const valoresMap = new Map<number, any>();
+    const valoresMap = new Map<string, any>();
     valores.forEach((v: any) => {
-      valoresMap.set(Number(v.id_dato_medico), v);
+      valoresMap.set(v.id_dato_medico, v);
     });
 
-    const gruposMap = new Map<number, GrupoVista>();
+    const gruposMap = new Map<string, GrupoVista>();
 
     catalogo.forEach((item: any) => {
-      const idTipo = Number(item.id_tipo_dato_medico);
-      const valor = valoresMap.get(Number(item.id));
+      const idTipo = item.id_tipo_dato_medico;
+      const valor = valoresMap.get(item.id);
       const opciones = item.opciones ? item.opciones.split(',').map((o: string) => o.trim()) : [];
 
       let valorNumero = valor ? valor.valor_numero : null;
@@ -132,7 +132,7 @@ export class EstudianteDatosMedicosComponent implements OnInit {
       }
 
       gruposMap.get(idTipo)!.datos.push({
-        id_dato: Number(item.id),
+        id_dato: item.id,
         nombre: item.nombre,
         nombre_tipo: item.nombre_tipo,
         icono_tipo: item.icono_tipo || '',

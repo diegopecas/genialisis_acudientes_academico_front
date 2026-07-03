@@ -11,7 +11,7 @@ export class UtilService {
      * Obtiene el ID del usuario almacenado en sessionStorage.
      * @returns {number | null} ID del usuario o null si no existe.
      */
-    obtenerIdUsuarioActual(): number | null {
+    obtenerIdUsuarioActual(): string | null {
         let usuario = sessionStorage.getItem('usuario');
         // Si no hay usuario en sessionStorage, redirigir al login
         if (!usuario) {
@@ -30,20 +30,29 @@ export class UtilService {
     }
     obtenerUsuarioActual(): any | null {
         let usuario = sessionStorage.getItem('usuario');
-        // Si no hay usuario en sessionStorage, redirigir al login
         if (!usuario) {
-            this.router.navigate(['/login']);  // Redirige al login usando rutas de Angular
+            this.router.navigate(['/login']);
             return null;
         }
         if (usuario) {
             try {
-                return JSON.parse(usuario);  // Devuelve el objeto usuario completo
+                return JSON.parse(usuario);
             } catch (error) {
                 console.error('Error al parsear usuario desde sessionStorage', error);
                 return null;
             }
         }
         return null;
+    }
+
+    obtenerIdColaboradorActual(): number | null {
+        const usuario = this.obtenerUsuarioActual();
+        return usuario?.id_colaborador ?? null;
+    }
+
+    obtenerIdPersonaActual(): number | null {
+        const usuario = this.obtenerUsuarioActual();
+        return usuario?.id_persona ?? null;
     }
     /**
      * Obtiene la fecha actual en formato YYYY-MM-DD HH:mm:ss.

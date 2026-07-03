@@ -32,7 +32,7 @@ export class HistorialRecordatoriosPagoService {
       );
   }
 
-  obtenerPorEstudiante(idEstudiante: number) {
+  obtenerPorEstudiante(idEstudiante: string) {
     return this.http
       .get<HttpResponse<Object>>(this.servicio + `/estudiante/${idEstudiante}`, { observe: 'response' })
       .pipe(
@@ -54,6 +54,17 @@ export class HistorialRecordatoriosPagoService {
       })
     };
     return this.http.post<any>(this.servicio, body, silentOptions).pipe(
+      tap((respuesta: any) => {
+        if (respuesta.error) throw respuesta.error;
+        return respuesta;
+      }),
+      catchError(this.handleError)
+    );
+  }
+
+  actualizar(registro: any) {
+    const body = JSON.stringify(registro);
+    return this.http.put<any>(this.servicio, body, httpOptions).pipe(
       tap((respuesta: any) => {
         if (respuesta.error) throw respuesta.error;
         return respuesta;

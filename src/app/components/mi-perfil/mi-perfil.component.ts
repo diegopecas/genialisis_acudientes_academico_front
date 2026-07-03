@@ -18,7 +18,7 @@ import { HabeasDataModalComponent } from '../habeas-data-modal/habeas-data-modal
 import { ConfiguracionGlobalService } from '../../services/configuracion-global.service';
 
 interface DatosPersonales {
-  idPersona: number;
+  idPersona: string;
   tipoIdentificacion: number | string;
   numeroIdentificacion: number | string;
   primerNombre: string;
@@ -85,7 +85,7 @@ export class MiPerfilComponent implements OnInit {
   };
 
   public model: DatosPersonales = {
-    idPersona: 0,
+    idPersona: '',
     tipoIdentificacion: '',
     numeroIdentificacion: '',
     primerNombre: '',
@@ -230,7 +230,7 @@ export class MiPerfilComponent implements OnInit {
 
   llenarFormulario(persona: any): void {
     this.model = {
-      idPersona: +persona.id,
+      idPersona: persona.id,
       tipoIdentificacion: persona.id_tipo_identificacion,
       numeroIdentificacion: persona.numero_identificacion,
       primerNombre: persona.primer_nombre || '',
