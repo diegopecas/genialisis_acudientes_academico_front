@@ -270,7 +270,7 @@
           <div class="acord-header" (click)="togglePago(pago.id)">
             <div class="acord-header-izq">
               <span class="acord-concepto">{{ pago.tipo_pago }}</span>
-              <span class="acord-fecha-sub">{{ formatearFecha(pago.fecha) }} · {{ pago.nombre_acudiente }}</span>
+              <span class="acord-fecha-sub">{{ formatearFecha(pago.fecha) }} · {{ pago.nombre_acudiente }}<span *ngIf="pago.referencia_bancaria"> · Ref: {{ pago.referencia_bancaria }}</span></span>
             </div>
             <div class="acord-header-der">
               <span class="acord-monto-pago">{{ formatPeso(pago.valor_recibido) }}</span>
@@ -293,27 +293,11 @@
 
             <ng-container *ngIf="!esCargandoDetalle(pago.id)">
 
-              <!-- Datos simplificados del pago -->
-              <div class="pago-montos-fila">
+              <!-- Datos del pago: fecha, acudiente, valor recibido y referencia ya van en el header -->
+              <div class="pago-montos-fila" *ngIf="pago.valor_aplicado_cuentas !== pago.valor_recibido">
                 <div class="acord-field">
-                  <span class="acord-label">Fecha</span>
-                  <span class="acord-value">{{ formatearFecha(pago.fecha) }}</span>
-                </div>
-                <div class="acord-field">
-                  <span class="acord-label">Acudiente</span>
-                  <span class="acord-value">{{ pago.nombre_acudiente }}</span>
-                </div>
-                <div class="acord-field">
-                  <span class="acord-label">Valor recibido</span>
-                  <span class="acord-value bold">{{ formatPeso(pago.valor_recibido) }}</span>
-                </div>
-                <div class="acord-field" *ngIf="pago.valor_aplicado_cuentas !== pago.valor_recibido">
                   <span class="acord-label">Valor aplicado</span>
                   <span class="acord-value">{{ formatPeso(pago.valor_aplicado_cuentas) }}</span>
-                </div>
-                <div class="acord-field" *ngIf="pago.referencia_bancaria">
-                  <span class="acord-label">Referencia</span>
-                  <span class="acord-value">{{ pago.referencia_bancaria }}</span>
                 </div>
               </div>
 
@@ -328,7 +312,7 @@
                 <div class="detalle-item" *ngFor="let dp of getDetallePago(pago.id)">
                   <div class="detalle-izq">
                     <span class="detalle-concepto">{{ dp.nombre_producto_servicio }}</span>
-                    <span class="detalle-fecha">{{ formatearFecha(dp.fecha) }}</span>
+                    <span class="detalle-fecha">{{ formatearFecha(dp.fecha_cobro) }}</span>
                   </div>
                   <span class="detalle-monto">{{ formatPeso(dp.valor_aplicado) }}</span>
                 </div>
@@ -406,11 +390,8 @@
             </div>
 
             <ng-container *ngIf="!esCargandoDetalle(cobro.id)">
+              <!-- Valor del cobro ya va en el header -->
               <div class="acord-grid">
-                <div class="acord-field">
-                  <span class="acord-label">Valor del cobro</span>
-                  <span class="acord-value bold">{{ formatPeso(cobro.valor) }}</span>
-                </div>
                 <div class="acord-field">
                   <span class="acord-label">Valor pagado</span>
                   <span class="acord-value">{{ formatPeso(cobro.valor_pagado) }}</span>
@@ -537,13 +518,9 @@
 
             <ng-container *ngIf="!esCargandoDetalle(item.id)">
 
-              <!-- Detalle cobro dentro de movimientos -->
+              <!-- Detalle cobro dentro de movimientos (valor del cobro ya va en el header) -->
               <ng-container *ngIf="item._tipo === 'cobro'">
                 <div class="acord-grid">
-                  <div class="acord-field">
-                    <span class="acord-label">Valor del cobro</span>
-                    <span class="acord-value bold">{{ formatPeso(item.valor) }}</span>
-                  </div>
                   <div class="acord-field">
                     <span class="acord-label">Valor pagado</span>
                     <span class="acord-value">{{ formatPeso(item.valor_pagado) }}</span>
@@ -569,21 +546,9 @@
                 </div>
               </ng-container>
 
-              <!-- Detalle pago dentro de movimientos -->
+              <!-- Detalle pago dentro de movimientos (fecha, acudiente y valor recibido ya van en el header) -->
               <ng-container *ngIf="item._tipo === 'pago'">
-                <div class="pago-montos-fila">
-                  <div class="acord-field">
-                    <span class="acord-label">Fecha</span>
-                    <span class="acord-value">{{ formatearFecha(item.fecha) }}</span>
-                  </div>
-                  <div class="acord-field">
-                    <span class="acord-label">Acudiente</span>
-                    <span class="acord-value">{{ item.nombre_acudiente }}</span>
-                  </div>
-                  <div class="acord-field">
-                    <span class="acord-label">Valor recibido</span>
-                    <span class="acord-value bold">{{ formatPeso(item.valor_recibido) }}</span>
-                  </div>
+                <div class="pago-montos-fila" *ngIf="(item.valor_aplicado_cuentas !== item.valor_recibido) || item.referencia_bancaria">
                   <div class="acord-field" *ngIf="item.valor_aplicado_cuentas !== item.valor_recibido">
                     <span class="acord-label">Valor aplicado</span>
                     <span class="acord-value">{{ formatPeso(item.valor_aplicado_cuentas) }}</span>
@@ -598,7 +563,7 @@
                   <div class="detalle-item" *ngFor="let dp of getDetallePago(item.id)">
                     <div class="detalle-izq">
                       <span class="detalle-concepto">{{ dp.nombre_producto_servicio }}</span>
-                      <span class="detalle-fecha">{{ formatearFecha(dp.fecha) }}</span>
+                      <span class="detalle-fecha">{{ formatearFecha(dp.fecha_cobro) }}</span>
                     </div>
                     <span class="detalle-monto">{{ formatPeso(dp.valor_aplicado) }}</span>
                   </div>
