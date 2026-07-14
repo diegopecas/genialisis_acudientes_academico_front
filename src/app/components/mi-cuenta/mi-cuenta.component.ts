@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { HeaderComponent } from '../../common/header/header.component';
-import { AuthService } from '../../services/auth.service';
+import { AuthService } from '../../services/auth_acudientes.service';
 import { AcudientesService } from '../../services/acudientes.service';
 import { CuentasPorCobrarService } from '../../services/cuentas-por-cobrar.service';
 import { PagosRecibidosService } from '../../services/pagos-recibidos.service';

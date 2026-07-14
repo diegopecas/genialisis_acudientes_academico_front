@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { UsuariosService } from '../../services/usuarios.service';
 import { AuthMasterService } from '../../services/auth-master.service';
-import { AuthService } from '../../services/auth.service';
+import { AuthService } from '../../services/auth_acudientes.service';
 import { AutorizacionesHabeasDataService } from '../../services/autorizaciones-habeas-data.service';
 import { Router } from '@angular/router';
 import Swal from 'sweetalert2';

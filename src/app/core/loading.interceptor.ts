@@ -22,11 +22,10 @@ export const loadingInterceptor: HttpInterceptorFn = (req, next) => {
         const cleanReq = req.clone({ headers: req.headers.delete('X-Silent') });
         return next(cleanReq).pipe(
             catchError((error) => {
-                // Aunque sea silenciosa, habeas data pendiente debe redirigir:
+                // Aunque sea silenciosa, habeas data pendiente debe cerrar sesion:
                 // un polling no puede dejar al usuario dentro sin autorizacion.
                 if (error?.status === 403 && error?.error?.code === 'HABEAS_DATA_REQUIRED') {
-                    sessionStorage.removeItem('usuario');
-                    sessionStorage.removeItem('token');
+                    sessionStorage.clear();
                     router.navigate(['/login']);
                 }
                 // No mostrar notificación en peticiones silenciosas
@@ -45,11 +44,12 @@ export const loadingInterceptor: HttpInterceptorFn = (req, next) => {
     return next(req).pipe(
         catchError((error) => {
             // Habeas data pendiente: NO es un error para el usuario. El backend
-            // exige aceptar la politica. Se limpia la sesion y se manda al login,
-            // donde el modal se vuelve a mostrar. Sin toast generico.
+            // exige aceptar la politica. Se limpia la sesion y se manda al login.
+            // Autonomo (sessionStorage.clear + Router): asi el mismo archivo sirve
+            // en el portal de padres y en el institucional, sin depender de un
+            // AuthService distinto en cada app.
             if (error?.status === 403 && error?.error?.code === 'HABEAS_DATA_REQUIRED') {
-                sessionStorage.removeItem('usuario');
-                sessionStorage.removeItem('token');
+                sessionStorage.clear();
                 router.navigate(['/login']);
                 return throwError(() => error);
             }

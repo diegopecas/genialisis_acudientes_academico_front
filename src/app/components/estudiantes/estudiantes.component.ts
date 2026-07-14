@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { EstudiantesService } from '../../services/estudiantes.service';
 import { AcudientesService } from '../../services/acudientes.service';
-import { AuthService } from '../../services/auth.service';
+import { AuthService } from '../../services/auth_acudientes.service';
 import { CommonModule } from '@angular/common';
 import { HeaderComponent } from '../../common/header/header.component';
 import { Router, RouterModule } from '@angular/router';
