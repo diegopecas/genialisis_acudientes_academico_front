@@ -159,25 +159,27 @@ export class MiPerfilComponent implements OnInit {
   }
 
   verificarHabeasData(): void {
-    this.autorizacionesHabeasDataService.verificar(this.usuario.id).subscribe({
+    this.autorizacionesHabeasDataService.verificar().subscribe({
       next: (response: any) => {
         const data: any = response.body;
-        if (data.autorizado) {
+        if (data.requiere_autorizacion) {
+          this.mostrarHabeasData = true;
+        } else {
           this.habeasDataVerificado = true;
           this.iniciarCarga();
-        } else {
-          this.mostrarHabeasData = true;
         }
       },
       error: (error: any) => {
         console.error('Error al verificar habeas data:', error);
-        this.habeasDataVerificado = true;
-        this.iniciarCarga();
+        // No se deja pasar ante error: el guard ya valido el acceso, y una
+        // falla aqui no debe habilitar la carga como si estuviera autorizado.
+        this.router.navigate(['/menu']);
       },
     });
   }
 
-  onHabeasDataAutorizado(): void {
+  onHabeasDataAutorizado(tokenNuevo: string): void {
+    this.authService.reemplazarToken(tokenNuevo);
     this.mostrarHabeasData = false;
     this.habeasDataVerificado = true;
     this.iniciarCarga();
@@ -390,10 +392,6 @@ export class MiPerfilComponent implements OnInit {
     this.router.navigate(['/menu']);
   }
 
-  onHabeasDataError(): void {
-    this.mostrarHabeasData = false;
-    this.router.navigate(['/menu']);
-  }
 
   // ========== MÉTODOS DE CAMBIAR CLAVE ==========
 

@@ -120,11 +120,9 @@
   </div>
 </div>
 
-<!-- Modal Habeas Data - Bloqueante -->
+<!-- Modal Habeas Data - Bloqueante. Sin inputs: el servidor toma los IDs
+     del token. Sin salida: el unico camino es aceptar. -->
 <app-habeas-data-modal
   *ngIf="mostrarHabeasData"
-  [idUsuario]="usuarioLogueado?.id"
-  [idPersona]="usuarioLogueado?.id_persona"
-  (autorizado)="onHabeasDataAutorizado()"
-  (errorPlantilla)="onHabeasDataError()">
+  (autorizado)="onHabeasDataAutorizado($event)">
 </app-habeas-data-modal>

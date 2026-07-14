@@ -9,10 +9,7 @@
   <!-- Modal Habeas Data - Bloqueante -->
   <app-habeas-data-modal
     *ngIf="mostrarHabeasData"
-    [idUsuario]="usuario?.id"
-    [idPersona]="usuario?.id_persona"
-    (autorizado)="onHabeasDataAutorizado()"
-    (errorPlantilla)="onHabeasDataError()"
+    (autorizado)="onHabeasDataAutorizado($event)"
   >
   </app-habeas-data-modal>
 

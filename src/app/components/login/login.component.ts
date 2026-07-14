@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { UsuariosService } from '../../services/usuarios.service';
 import { AuthMasterService } from '../../services/auth-master.service';
+import { AuthService } from '../../services/auth.service';
 import { AutorizacionesHabeasDataService } from '../../services/autorizaciones-habeas-data.service';
 import { Router } from '@angular/router';
 import Swal from 'sweetalert2';
@@ -46,15 +47,14 @@ export class LoginComponent implements OnInit {
   constructor(
     private usuariosService: UsuariosService,
     private authMasterService: AuthMasterService,
+    private authService: AuthService,
     private autorizacionesHabeasDataService: AutorizacionesHabeasDataService,
     private router: Router,
     private institucionConfigService: InstitucionConfigService,
   ) {}
 
   ngOnInit(): void {
-    sessionStorage.removeItem('usuario');
-    sessionStorage.removeItem('token');
-    sessionStorage.removeItem('institucion_actual');
+    this.authService.limpiarSesion();
   }
 
   togglePasswordVisibility(): void {
@@ -137,6 +137,7 @@ export class LoginComponent implements OnInit {
     const credenciales = {
       usuario: this.usuario,
       clave: this.password,
+      portal: 'padres',
     };
 
     this.usuariosService.autenticacion(credenciales).subscribe({
@@ -169,18 +170,20 @@ export class LoginComponent implements OnInit {
             return;
           }
 
+          // El token si se guarda: el interceptor lo necesita para llamar a
+          // los endpoints de habeas data. El 'usuario' NO, porque es lo unico
+          // que mira AuthGuard. Sin esa clave, el boton atras, la URL directa
+          // y el recargar quedan cerrados.
           if (data.token) {
-            sessionStorage.setItem('token', data.token);
+            this.authService.reemplazarToken(data.token);
           }
 
           const usuarioSinToken = { ...data };
           delete usuarioSinToken.token;
           usuarioSinToken.portal = 'padres';
-          sessionStorage.setItem('usuario', JSON.stringify(usuarioSinToken));
 
-          // Verificar habeas data antes de navegar
           this.usuarioLogueado = usuarioSinToken;
-          this.verificarHabeasData(usuarioSinToken);
+          this.verificarHabeasData();
         } else {
           Swal.fire({
             title: 'Contraseña incorrecta',
@@ -204,27 +207,57 @@ export class LoginComponent implements OnInit {
     });
   }
 
-  private verificarHabeasData(usuario: any): void {
-    this.autorizacionesHabeasDataService.verificar(usuario.id).subscribe({
+  /**
+   * El backend decide si la politica es exigible. El front solo obedece.
+   * Ante un error tecnico NO se deja pasar: se aborta el login.
+   */
+  private verificarHabeasData(): void {
+    this.autorizacionesHabeasDataService.verificar().subscribe({
       next: (response: any) => {
         const data: any = response.body;
-        if (data.autorizado) {
-          this.navegarAlMenu();
-        } else {
+
+        if (data.requiere_autorizacion) {
           this.mostrarHabeasData = true;
+          return;
         }
+
+        this.iniciarSesion();
       },
       error: (error: any) => {
         console.error('Error al verificar habeas data:', error);
-        // En caso de error técnico, dejar pasar
-        this.navegarAlMenu();
+        this.abortarLogin(
+          'No se pudo verificar la política de tratamiento de datos. Intenta de nuevo.'
+        );
       },
     });
   }
 
-  onHabeasDataAutorizado(): void {
-    this.mostrarHabeasData = false;
+  /**
+   * Unico punto donde la sesion queda establecida.
+   */
+  private iniciarSesion(): void {
+    this.authService.guardarSesion(this.usuarioLogueado);
     this.navegarAlMenu();
+  }
+
+  private abortarLogin(mensaje: string): void {
+    this.mostrarHabeasData = false;
+    this.usuarioLogueado = null;
+    this.authService.limpiarSesion();
+    Swal.fire({
+      title: 'No pudimos continuar',
+      text: mensaje,
+      icon: 'error',
+      confirmButtonText: 'Entendido',
+      confirmButtonColor: '#FFC107',
+    });
+  }
+
+  onHabeasDataAutorizado(tokenNuevo: string): void {
+    // El token nuevo trae el pasaporte hd_ok firmado por el servidor.
+    this.authService.reemplazarToken(tokenNuevo);
+    this.mostrarHabeasData = false;
+    this.iniciarSesion();
   }
 
   private navegarAlMenu(): void {
@@ -268,8 +301,4 @@ export class LoginComponent implements OnInit {
     this.tenantsDisponibles = [];
   }
 
-  onHabeasDataError(): void {
-    this.mostrarHabeasData = false;
-    this.navegarAlMenu();
-  }
 }

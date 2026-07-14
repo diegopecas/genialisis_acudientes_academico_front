@@ -5,6 +5,7 @@ import { LoginComponent } from './components/login/login.component';
 import { UsuariosComponent } from './components/usuarios/usuarios.component';
 import { VistaEstudianteComponent } from './components/estudiantes/vista-estudiante/vista-estudiante.component';
 import { AuthGuard } from './core/auth.guard';
+import { HabeasDataGuard } from './core/habeas-data.guard';
 import { EstudianteGuard } from './core/estudiante.guard';
 import { GaleriaComponent } from './components/galeria/galeria.component';
 import { MiPerfilComponent } from './components/mi-perfil/mi-perfil.component';
@@ -24,86 +25,90 @@ export const routes: Routes = [
   { 
     path: 'menu', 
     component: MenuComponent,
-    canActivate: [AuthGuard]
+    canActivate: [AuthGuard, HabeasDataGuard]
   },
   { 
     path: 'estudiantes', 
     component: EstudiantesComponent,
-    canActivate: [AuthGuard],
+    canActivate: [AuthGuard, HabeasDataGuard],
     data: { trackear: true, labelAcceso: 'Estudiantes', iconoAcceso: '🎓' }
   },
   { 
     path: 'galeria', 
     component: GaleriaComponent,
-    canActivate: [AuthGuard],
+    canActivate: [AuthGuard, HabeasDataGuard],
     data: { trackear: true, labelAcceso: 'Galería', iconoAcceso: '🖼️' }
   },
   { 
     path: 'usuarios', 
     component: UsuariosComponent,
-    canActivate: [AuthGuard]
+    canActivate: [AuthGuard, HabeasDataGuard]
   },
   { 
     path: 'mi-perfil', 
     component: MiPerfilComponent,
-    canActivate: [AuthGuard]
+    canActivate: [AuthGuard, HabeasDataGuard]
   },
   { 
     path: 'info-padres', 
     component: InfoPadresComponent,
-    canActivate: [AuthGuard],
+    canActivate: [AuthGuard, HabeasDataGuard],
     data: { trackear: true, labelAcceso: 'Info para todos', iconoAcceso: '📢' }
   },
   { 
     path: 'info-padres/productos', 
     component: ProductosComponent,
-    canActivate: [AuthGuard],
+    canActivate: [AuthGuard, HabeasDataGuard],
     data: { trackear: true, labelAcceso: 'Productos', iconoAcceso: '📦' }
   },
   { 
     path: 'info-padres/calendario', 
     component: CalendarioPadresComponent,
-    canActivate: [AuthGuard],
+    canActivate: [AuthGuard, HabeasDataGuard],
     data: { trackear: true, labelAcceso: 'Calendario', iconoAcceso: '📅' }
   },
   { 
     path: 'info-padres/menu-alimentacion', 
     component: MenuAlimentacionPadresComponent,
-    canActivate: [AuthGuard],
+    canActivate: [AuthGuard, HabeasDataGuard],
     data: { trackear: true, labelAcceso: 'Menú Alimentación', iconoAcceso: '🍽️' }
   },
   { 
     path: 'info-padres/horario', 
     component: HorarioPadresComponent,
-    canActivate: [AuthGuard],
+    canActivate: [AuthGuard, HabeasDataGuard],
     data: { trackear: true, labelAcceso: 'Horario', iconoAcceso: '🕐' }
   },
   { 
     path: 'autorizados-recoger', 
     component: AutorizadosRecogerComponent,
-    canActivate: [AuthGuard],
+    canActivate: [AuthGuard, HabeasDataGuard],
     data: { trackear: true, labelAcceso: 'Autorizados', iconoAcceso: '🚗' }
   },
   { 
     path: 'reportes-pago', 
     component: ReportesPagoComponent,
-    canActivate: [AuthGuard],
+    canActivate: [AuthGuard, HabeasDataGuard],
     data: { trackear: true, labelAcceso: 'Reportar Pago', iconoAcceso: '💰' }
   },
   { 
     path: 'mi-cuenta', 
     component: MiCuentaComponent,
-    canActivate: [AuthGuard],
+    canActivate: [AuthGuard, HabeasDataGuard],
     data: { trackear: true, labelAcceso: 'Mi Cuenta', iconoAcceso: '💳' }
   },
   
   { 
     path: 'estudiantes-vista/:id', 
     component: VistaEstudianteComponent,
-    canActivate: [AuthGuard, EstudianteGuard]
+    canActivate: [AuthGuard, HabeasDataGuard, EstudianteGuard]
   },
   
-  { path: 'salir', component: MenuComponent },
+  { 
+    path: 'salir', 
+    component: MenuComponent,
+    canActivate: [AuthGuard, HabeasDataGuard]
+  },
   
   { path: '**', redirectTo: 'login' }
 ];

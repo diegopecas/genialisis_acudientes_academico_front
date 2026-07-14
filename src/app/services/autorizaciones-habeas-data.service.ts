@@ -5,9 +5,21 @@ import {
 } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { environment } from '../../environments/environment';
-import { Observable, throwError } from 'rxjs';
+import { throwError } from 'rxjs';
 import { catchError, tap } from 'rxjs/operators';
 import { httpOptions } from './http';
+
+export interface VerificacionHabeasData {
+  requiere_autorizacion: boolean;
+  autorizado: boolean;
+  version_actual: string | null;
+}
+
+export interface RegistroHabeasData {
+  token: string;
+  version_politica: string;
+  mensaje: string;
+}
 
 @Injectable({
   providedIn: 'root',
@@ -17,9 +29,12 @@ export class AutorizacionesHabeasDataService {
 
   constructor(private http: HttpClient) {}
 
-  verificar(idUsuario: number) {
+  /**
+   * El id_usuario sale del JWT, no de la URL.
+   */
+  verificar() {
     return this.http
-      .get<HttpResponse<Object>>(this.servicio + `/verificar/${idUsuario}`, {
+      .get<HttpResponse<Object>>(this.servicio + '/verificar', {
         observe: 'response',
       })
       .pipe(
@@ -51,16 +66,14 @@ export class AutorizacionesHabeasDataService {
       );
   }
 
-  registrar(data: {
-    id_usuario: number;
-    id_persona: number;
-    version_politica: string;
-  }) {
-    const body = JSON.stringify(data);
-    return this.http.post<any>(this.servicio, body, httpOptions).pipe(
+  /**
+   * Sin cuerpo: el servidor toma id_usuario, id_persona, portal y version
+   * del token. Devuelve un token nuevo que ya trae el pasaporte hd_ok.
+   */
+  registrar() {
+    return this.http.post<RegistroHabeasData>(this.servicio, '{}', httpOptions).pipe(
       tap((respuesta: any) => {
         if (respuesta.error) {
-          console.log(respuesta);
           throw respuesta.error;
         }
         return respuesta;
