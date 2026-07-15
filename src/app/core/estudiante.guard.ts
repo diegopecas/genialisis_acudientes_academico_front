@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { CanActivate, ActivatedRouteSnapshot, RouterStateSnapshot, Router } from '@angular/router';
-import { AuthService } from '../services/auth_acudientes.service';
+import { EstudiantesSessionService } from '../services/estudiantes-session.service';
 import Swal from 'sweetalert2';
 
 @Injectable({
@@ -9,7 +9,7 @@ import Swal from 'sweetalert2';
 export class EstudianteGuard implements CanActivate {
 
   constructor(
-    private authService: AuthService,
+    private estudiantesSessionService: EstudiantesSessionService,
     private router: Router
   ) {}
 
@@ -27,7 +27,7 @@ export class EstudianteGuard implements CanActivate {
     }
 
     // Verificar si el estudiante pertenece al usuario actual
-    const tieneAcceso = this.authService.esEstudianteDelUsuario(idEstudiante);
+    const tieneAcceso = this.estudiantesSessionService.esEstudianteDelUsuario(idEstudiante);
 
     if (!tieneAcceso) {
       console.warn(`Acceso denegado al estudiante ${idEstudiante}`);

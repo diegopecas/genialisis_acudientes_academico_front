@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { HeaderComponent } from '../../common/header/header.component';
-import { AuthService } from '../../services/auth_acudientes.service';
+import { AuthService } from '../../services/auth.service';
 import { GaleriasService } from '../../services/galerias.service';
 import { GaleriaImagenesService } from '../../services/galeria-imagenes.service';
 import { InstitucionConfigService } from '../../services/institucion-config.service';

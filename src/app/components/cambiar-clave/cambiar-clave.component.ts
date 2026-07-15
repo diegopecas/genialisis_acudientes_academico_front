@@ -2,7 +2,8 @@ import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { AuthService } from '../../services/auth_acudientes.service';
+import { AuthService } from '../../services/auth.service';
+import { EstudiantesSessionService } from '../../services/estudiantes-session.service';
 import { UsuariosService } from '../../services/usuarios.service';
 import { HeaderComponent } from '../../common/header/header.component';
 import Swal from 'sweetalert2';
@@ -41,6 +42,7 @@ export class CambiarClaveComponent implements OnInit {
   constructor(
     private router: Router,
     private authService: AuthService,
+    private estudiantesSessionService: EstudiantesSessionService,
     private usuariosService: UsuariosService
   ) {}
 
@@ -272,7 +274,7 @@ export class CambiarClaveComponent implements OnInit {
    */
   private cerrarSesion(): void {
     sessionStorage.removeItem('usuario');
-    this.authService.limpiarEstudiantesIds();
+    this.estudiantesSessionService.limpiarEstudiantesIds();
     this.router.navigate(['/login']);
   }
 

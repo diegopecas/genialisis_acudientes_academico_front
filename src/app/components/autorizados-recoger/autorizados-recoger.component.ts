@@ -13,7 +13,7 @@ import { TiposAutorizacionRecogerService } from '../../services/tipos-autorizaci
 import { PersonasService } from '../../services/personas.service';
 import { TiposIdentificacionService } from '../../services/tipos-identificacion.service';
 import { AcudientesService } from '../../services/acudientes.service';
-import { AuthService } from '../../services/auth_acudientes.service';
+import { AuthService } from '../../services/auth.service';
 import { environment } from '../../../environments/environment';
 import { tap, catchError } from 'rxjs/operators';
 import { throwError } from 'rxjs';

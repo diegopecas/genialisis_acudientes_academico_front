@@ -10,7 +10,7 @@ import { ReportesPagoService } from '../../services/reportes-pago.service';
 import { TiposPagosService } from '../../services/tipos-pagos.service';
 import { ColaboradoresService } from '../../services/colaboradores.service';
 import { PersonasService } from '../../services/personas.service';
-import { AuthService } from '../../services/auth_acudientes.service';
+import { AuthService } from '../../services/auth.service';
 import { environment } from '../../../environments/environment';
 import { tap, catchError } from 'rxjs/operators';
 import { throwError } from 'rxjs';

@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { CanActivate, Router } from '@angular/router';
-import { AuthService } from '../services/auth_acudientes.service';
+import { AuthService } from '../services/auth.service';
 
 /**
  * Impide navegar a rutas protegidas mientras el token no traiga el pasaporte
@@ -25,8 +25,7 @@ export class HabeasDataGuard implements CanActivate {
     }
 
     console.warn('Habeas data pendiente, redirigiendo a login');
-    this.authService.limpiarSesion();
-    this.router.navigate(['/login']);
+    this.authService.logout();
     return false;
   }
 }

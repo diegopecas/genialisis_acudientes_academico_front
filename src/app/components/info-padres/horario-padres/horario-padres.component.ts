@@ -4,7 +4,7 @@ import { Router } from '@angular/router';
 import { HeaderComponent } from '../../../common/header/header.component';
 import { AcudientesService } from '../../../services/acudientes.service';
 import { HorariosService } from '../../../services/horarios.service';
-import { AuthService } from '../../../services/auth_acudientes.service';
+import { AuthService } from '../../../services/auth.service';
 
 interface Estudiante {
   id_estudiante: number;

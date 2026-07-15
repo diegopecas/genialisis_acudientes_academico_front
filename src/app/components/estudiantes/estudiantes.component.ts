@@ -1,7 +1,8 @@
 import { Component } from '@angular/core';
 import { EstudiantesService } from '../../services/estudiantes.service';
 import { AcudientesService } from '../../services/acudientes.service';
-import { AuthService } from '../../services/auth_acudientes.service';
+import { AuthService } from '../../services/auth.service';
+import { EstudiantesSessionService } from '../../services/estudiantes-session.service';
 import { CommonModule } from '@angular/common';
 import { HeaderComponent } from '../../common/header/header.component';
 import { Router, RouterModule } from '@angular/router';
@@ -22,6 +23,7 @@ export class EstudiantesComponent {
     private estudiantesService: EstudiantesService,
     private acudientesService: AcudientesService,
     private authService: AuthService,
+    private estudiantesSessionService: EstudiantesSessionService,
     private router: Router,
   ) {}
 
@@ -34,7 +36,7 @@ export class EstudiantesComponent {
     console.log('Usuario actual:', usuarioActual);
 
     if (usuarioActual?.id_persona) {
-      this.authService
+      this.estudiantesSessionService
         .almacenarEstudiantesIds(usuarioActual.id_persona)
         .subscribe(
           (success) => {

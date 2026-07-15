@@ -11,7 +11,7 @@ import { GenerosService } from '../../../../services/generos.service';
 import { GruposService } from '../../../../services/grupos.service';
 import { CiudadesService } from '../../../../services/ciudades.service';
 import { HistorialCambiosPersonaService } from '../../../../services/historial-cambios-persona.service';
-import { AuthService } from '../../../../services/auth_acudientes.service';
+import { AuthService } from '../../../../services/auth.service';
 import { FotoPersonaComponent } from '../../../../common/foto-persona/foto-persona.component';
 import { DocumentosPersonaComponent } from '../../../../common/documentos-persona/documentos-persona.component';
 

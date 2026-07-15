@@ -8,7 +8,7 @@ import { PersonasService } from '../../services/personas.service';
 import { GenerosService } from '../../services/generos.service';
 import { CiudadesService } from '../../services/ciudades.service';
 import { TiposIdentificacionService } from '../../services/tipos-identificacion.service';
-import { AuthService } from '../../services/auth_acudientes.service';
+import { AuthService } from '../../services/auth.service';
 import { HistorialCambiosPersonaService } from '../../services/historial-cambios-persona.service';
 import { AutorizacionesHabeasDataService } from '../../services/autorizaciones-habeas-data.service';
 import { UsuariosService } from '../../services/usuarios.service';

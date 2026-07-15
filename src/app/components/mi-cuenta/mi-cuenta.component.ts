@@ -3,7 +3,8 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { HeaderComponent } from '../../common/header/header.component';
-import { AuthService } from '../../services/auth_acudientes.service';
+import { AuthService } from '../../services/auth.service';
+import { EstudiantesSessionService } from '../../services/estudiantes-session.service';
 import { AcudientesService } from '../../services/acudientes.service';
 import { CuentasPorCobrarService } from '../../services/cuentas-por-cobrar.service';
 import { PagosRecibidosService } from '../../services/pagos-recibidos.service';
@@ -134,6 +135,7 @@ export class MiCuentaComponent implements OnInit, OnDestroy {
 
   constructor(
     private authService: AuthService,
+    private estudiantesSessionService: EstudiantesSessionService,
     private acudientesService: AcudientesService,
     private cuentasPorCobrarService: CuentasPorCobrarService,
     private pagosRecibidosService: PagosRecibidosService,
@@ -163,7 +165,7 @@ export class MiCuentaComponent implements OnInit, OnDestroy {
       this.router.navigate(['/login']);
       return;
     }
-    this.authService.almacenarEstudiantesIds(usuario.id_persona).subscribe({
+    this.estudiantesSessionService.almacenarEstudiantesIds(usuario.id_persona).subscribe({
       next: () => this.obtenerListaEstudiantes(usuario.id_persona),
       error: () => this.obtenerListaEstudiantes(usuario.id_persona)
     });
