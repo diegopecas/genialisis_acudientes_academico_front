@@ -144,8 +144,16 @@ export class GaleriaComponent implements OnInit, OnDestroy {
     const tieneFlagDev = localStorage.getItem('lumen_dev') === '1';
     this.debugModosVisible = esLocalhost || tieneFlagDev;
 
-    // Obtener usuario y cargar galerías
-    this.loadUserAndGalerias();
+    // Obtener usuario y cargar galerías. El token efímero de imagenes debe
+    // estar listo antes: las URLs de <img> se arman de forma sincrona
+    // (transformImages y getThumbnailUrl) y sin token darian 401.
+    this.galeriaImagenesService.inicializarTokenImagenes().subscribe({
+      next: () => this.loadUserAndGalerias(),
+      error: (error) => {
+        console.error('Error al obtener el token de imágenes:', error);
+        this.loadUserAndGalerias();
+      },
+    });
 
     this.initAOS();
   }
